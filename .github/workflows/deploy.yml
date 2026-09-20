@@ -1,0 +1,82 @@
+name: Deploy app to Azure Static Web Apps
+
+# Every push and pull request to main is built. Only pushes to main (and manual
+# runs) are deployed.
+#
+# One-time setup in the GitHub repository (Settings > Secrets and variables > Actions):
+#   secret   AZURE_STATIC_WEB_APPS_API_TOKEN  terraform -chdir=../edit30terraform output -raw static_web_app_deployment_token
+#   variable REACT_APP_API_URL                terraform -chdir=../edit30terraform output -raw frontend_api_url
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel a deployment half way through; only supersede pull request builds.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Create React App bakes this in at build time; without it the app would
+      # silently fall back to http://localhost:4000/api.
+      - name: Check that the API URL is configured
+        env:
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+        run: |
+          if [ -z "$REACT_APP_API_URL" ]; then
+            echo "::error::Repository variable REACT_APP_API_URL is not set (see the top of this file)."
+            exit 1
+          fi
+
+      - name: Build
+        env:
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+          # GitHub sets CI=true, which makes Create React App fail the build on
+          # lint warnings (the app currently has some unused-variable ones).
+          # Type errors still fail the build.
+          CI: "false"
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: build
+
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          # Already built above, so upload the finished files as they are.
+          app_location: build
+          skip_app_build: true
+          skip_api_build: true

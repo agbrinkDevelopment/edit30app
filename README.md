@@ -44,3 +44,21 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+## Deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` builds every push and pull request to `main`, and deploys pushes to `main` to the Azure
+Static Web App created by `edit30terraform`. `public/staticwebapp.config.json` makes deep links (react-router) fall back
+to `index.html`; if you add a new top-level folder to `public/`, add it to that file's `exclude` list.
+
+One-time setup, before the first push to `main` (Settings > Secrets and variables > Actions), or with the `gh` CLI:
+
+```bash
+cd ../edit30terraform
+terraform output -raw static_web_app_deployment_token | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --repo agbrinkDevelopment/edit30app
+gh variable set REACT_APP_API_URL --repo agbrinkDevelopment/edit30app --body "$(terraform output -raw frontend_api_url)"
+```
+
+`REACT_APP_API_URL` is baked into the JavaScript at build time, so the build fails if the variable is missing rather than
+silently pointing at `localhost`. The workflow builds with `CI=false` because Create React App otherwise turns lint
+warnings into build errors.
