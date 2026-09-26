@@ -31,6 +31,7 @@ export default function TimelineEventFormModal({
   onChange,
   onCancel,
   onSave,
+  showRevealedToggle = true,
 }: {
   creating: boolean;
   draft: TimelineEventDraft;
@@ -38,6 +39,9 @@ export default function TimelineEventFormModal({
   onChange: (updater: (d: TimelineEventDraft) => TimelineEventDraft) => void;
   onCancel: () => void;
   onSave: () => void;
+  // The admin panel edits the real timeline_events, where "revealed" governs
+  // what players can see. A player's own reconstruction has no such concept.
+  showRevealedToggle?: boolean;
 }) {
   const toggleCharacter = (id: string) =>
     onChange((d) => ({
@@ -79,21 +83,23 @@ export default function TimelineEventFormModal({
           />
         ))}
       </div>
-      <label style={sharedStyles.revealedToggle}>
-        <input
-          type="checkbox"
-          checked={draft.revealed}
-          onChange={(e) =>
-            onChange((d) => ({ ...d, revealed: e.target.checked }))
-          }
-        />
-        {draft.revealed ? (
-          <Eye size={14} color={theme.accent} />
-        ) : (
-          <EyeOff size={14} color={theme.textMuted} />
-        )}
-        <span>Synligt för spelarna</span>
-      </label>
+      {showRevealedToggle && (
+        <label style={sharedStyles.revealedToggle}>
+          <input
+            type="checkbox"
+            checked={draft.revealed}
+            onChange={(e) =>
+              onChange((d) => ({ ...d, revealed: e.target.checked }))
+            }
+          />
+          {draft.revealed ? (
+            <Eye size={14} color={theme.accent} />
+          ) : (
+            <EyeOff size={14} color={theme.textMuted} />
+          )}
+          <span>Synligt för spelarna</span>
+        </label>
+      )}
       <div style={sharedStyles.formActions}>
         <button style={sharedStyles.btnSecondary} onClick={onCancel}>
           <X size={15} /> Avbryt

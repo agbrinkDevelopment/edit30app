@@ -27,25 +27,42 @@ import Handelseforloppet from "./pages/Handelseforloppet";
 import Dokument from "./pages/Documents";
 import SignIn from "./pages/SignIn";
 import Admin from "./pages/Admin";
+import { api } from "./api/client";
 
 function loadSession(): Session | null {
   const team = localStorage.getItem("mystery-team");
   const role = localStorage.getItem("mystery-role") as Role | null;
-  return team && role ? { team, role } : null;
+  const playerId = localStorage.getItem("mystery-player-id") ?? undefined;
+  return team && role ? { team, role, playerId } : null;
 }
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(loadSession);
 
-  const handleSignIn = (team: string, role: Role) => {
+  const handleSignIn = async (team: string, role: Role) => {
     localStorage.setItem("mystery-team", team);
     localStorage.setItem("mystery-role", role);
-    setSession({ team, role });
+
+    let playerId: string | undefined;
+    if (role === "player") {
+      try {
+        const player = await api.signInPlayer(team);
+        playerId = player.id;
+        localStorage.setItem("mystery-player-id", playerId);
+      } catch (err) {
+        // Non-fatal: they can still play, just without a persisted timeline
+        // reconstruction until sign-in succeeds (e.g. next time).
+        // eslint-disable-next-line no-console
+        console.error("Could not register player:", err);
+      }
+    }
+    setSession({ team, role, playerId });
   };
 
   const handleSignOut = () => {
     localStorage.removeItem("mystery-team");
     localStorage.removeItem("mystery-role");
+    localStorage.removeItem("mystery-player-id");
     resetGameTimer();
     setSession(null);
   };

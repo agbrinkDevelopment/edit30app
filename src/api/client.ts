@@ -1,7 +1,12 @@
 import {
   Character,
+  Clue,
   EvidenceType,
   GameDocument,
+  Player,
+  PlayerClue,
+  PlayerEvidence,
+  PlayerTimelineEvent,
   TimelineEvent,
 } from "../types";
 
@@ -16,8 +21,14 @@ export interface GameSettings {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    // Only set this when there's actually a body: Fastify's JSON parser
+    // rejects a request that declares this content-type but sends an empty
+    // body (e.g. every DELETE, which never has one).
+    headers: {
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -49,6 +60,11 @@ export const api = {
   updateCharacter: (id: string, c: Partial<Character>) =>
     put<Character>(`/characters/${id}`, c),
   deleteCharacter: (id: string) => del(`/characters/${id}`),
+
+  getClues: () => get<Clue[]>("/clues"),
+  createClue: (c: Omit<Clue, "id">) => post<Clue>("/clues", c),
+  updateClue: (id: string, c: Partial<Clue>) => put<Clue>(`/clues/${id}`, c),
+  deleteClue: (id: string) => del(`/clues/${id}`),
 
   getTimelineEvents: () => get<TimelineEvent[]>("/timeline-events"),
   createTimelineEvent: (e: Omit<TimelineEvent, "id">) =>
@@ -94,4 +110,46 @@ export const api = {
   setVictimNoteRevealed: (id: string, revealed: boolean) =>
     patch<GameDocument>(`/victim-notes/${id}/revealed`, { revealed }),
   deleteVictimNote: (id: string) => del(`/victim-notes/${id}`),
+
+  signInPlayer: (team: string) => post<Player>("/players/sign-in", { team }),
+  getPlayerTimelineEvents: (playerId: string) =>
+    get<PlayerTimelineEvent[]>(`/players/${playerId}/timeline-events`),
+  createPlayerTimelineEvent: (
+    playerId: string,
+    e: Omit<PlayerTimelineEvent, "id">,
+  ) => post<PlayerTimelineEvent>(`/players/${playerId}/timeline-events`, e),
+  updatePlayerTimelineEvent: (
+    playerId: string,
+    id: string,
+    e: Partial<PlayerTimelineEvent>,
+  ) => put<PlayerTimelineEvent>(`/players/${playerId}/timeline-events/${id}`, e),
+  deletePlayerTimelineEvent: (playerId: string, id: string) =>
+    del(`/players/${playerId}/timeline-events/${id}`),
+  getPlayerTimelineStatus: (playerId: string) =>
+    get<{ solved: boolean }>(`/players/${playerId}/timeline-status`),
+
+  getPlayerEvidence: (playerId: string) =>
+    get<PlayerEvidence[]>(`/players/${playerId}/evidence`),
+  createPlayerEvidence: (playerId: string, e: Omit<PlayerEvidence, "id">) =>
+    post<PlayerEvidence>(`/players/${playerId}/evidence`, e),
+  updatePlayerEvidence: (
+    playerId: string,
+    id: string,
+    e: Partial<PlayerEvidence>,
+  ) => put<PlayerEvidence>(`/players/${playerId}/evidence/${id}`, e),
+  deletePlayerEvidence: (playerId: string, id: string) =>
+    del(`/players/${playerId}/evidence/${id}`),
+  getPlayerEvidenceStatus: (playerId: string) =>
+    get<{ solved: boolean }>(`/players/${playerId}/evidence-status`),
+
+  getPlayerClues: (playerId: string) =>
+    get<PlayerClue[]>(`/players/${playerId}/clues`),
+  createPlayerClue: (playerId: string, c: Omit<PlayerClue, "id">) =>
+    post<PlayerClue>(`/players/${playerId}/clues`, c),
+  updatePlayerClue: (playerId: string, id: string, c: Partial<PlayerClue>) =>
+    put<PlayerClue>(`/players/${playerId}/clues/${id}`, c),
+  deletePlayerClue: (playerId: string, id: string) =>
+    del(`/players/${playerId}/clues/${id}`),
+  getPlayerClueStatus: (playerId: string) =>
+    get<{ solved: boolean }>(`/players/${playerId}/clue-status`),
 };

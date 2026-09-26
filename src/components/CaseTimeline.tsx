@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Clock, Edit2, Plus, Trash2, Check, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
-import { TimelineEvent } from "../types";
+import { PlayerTimelineEvent } from "../types";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Modal from "./Modal";
-import CharacterPill from "./CharacterPill";
 import TimelineEventFormModal, {
   emptyTimelineEventDraft,
 } from "./TimelineEventFormModal";
@@ -29,7 +28,7 @@ function formatMinutes(minutes: number): string {
 
 function computeLaneOrder(
   characterIds: string[],
-  events: TimelineEvent[],
+  events: PlayerTimelineEvent[],
 ): string[] {
   const adjacency = new Map<string, Set<string>>();
   characterIds.forEach((id) => adjacency.set(id, new Set()));
@@ -57,154 +56,66 @@ function computeLaneOrder(
   return order;
 }
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-interface TimelineGuess {
-  id: string;
-  time: string;
-  description: string;
-}
-
-const GUESS_KEY = "mystery-timeline-guesses";
-
-function loadGuesses(): Record<string, TimelineGuess[]> {
-  try {
-    const saved = localStorage.getItem(GUESS_KEY);
-    return saved ? JSON.parse(saved) : {};
-  } catch {
-    return {};
-  }
-}
-
-function normalize(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[.,;:!?]+$/, "");
-}
-
+// The timeline a player has personally reconstructed. Never fed the real
+// timeline_events — only this player's own events, plus whether they match
+// (computed server-side; see usePlayerTimeline / playerService).
 export default function CaseTimeline({
-  onSolvedChange,
+  events,
+  solved,
+  onAddEvent,
+  onUpdateEvent,
+  onRemoveEvent,
 }: {
-  onSolvedChange?: (solved: boolean) => void;
-} = {}) {
-  const { game, addTimelineEvent, updateTimelineEvent } = useGame();
+  events: PlayerTimelineEvent[];
+  solved: boolean;
+  onAddEvent: (e: Omit<PlayerTimelineEvent, "id">) => void;
+  onUpdateEvent: (e: PlayerTimelineEvent) => void;
+  onRemoveEvent: (id: string) => void;
+}) {
+  const { game } = useGame();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [creatingEvent, setCreatingEvent] = useState(false);
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [eventDraft, setEventDraft] = useState(emptyTimelineEventDraft());
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState(emptyTimelineEventDraft());
 
-  const startCreateEvent = () => {
-    setEventDraft(emptyTimelineEventDraft());
-    setCreatingEvent(true);
-    setEditingEventId(null);
+  const startCreate = () => {
+    setDraft(emptyTimelineEventDraft());
+    setCreating(true);
+    setEditingId(null);
+    setSelectedId(null);
   };
-  const startEditEvent = (e: TimelineEvent) => {
-    setEventDraft({
+  const startEdit = (e: PlayerTimelineEvent) => {
+    setDraft({
       time: e.time,
       description: e.description,
       characterIds: e.characterIds,
-      revealed: e.revealed,
+      revealed: true,
     });
-    setEditingEventId(e.id);
-    setCreatingEvent(false);
+    setEditingId(e.id);
+    setCreating(false);
     setSelectedId(null);
   };
-  const cancelEventForm = () => {
-    setCreatingEvent(false);
-    setEditingEventId(null);
+  const cancelForm = () => {
+    setCreating(false);
+    setEditingId(null);
   };
-  const saveEventForm = () => {
-    if (!eventDraft.time || eventDraft.characterIds.length === 0) return;
-    if (creatingEvent) addTimelineEvent(eventDraft);
-    else if (editingEventId)
-      updateTimelineEvent({ ...eventDraft, id: editingEventId });
-    cancelEventForm();
+  const saveForm = () => {
+    if (!draft.time || draft.characterIds.length === 0) return;
+    const payload = {
+      time: draft.time,
+      description: draft.description,
+      characterIds: draft.characterIds,
+    };
+    if (creating) onAddEvent(payload);
+    else if (editingId) onUpdateEvent({ ...payload, id: editingId });
+    cancelForm();
   };
-  const showEventForm = creatingEvent || editingEventId;
+  const showForm = creating || editingId;
 
-  const [guesses, setGuesses] =
-    useState<Record<string, TimelineGuess[]>>(loadGuesses);
-  const [guessCharId, setGuessCharId] = useState<string | null>(null);
-  const [guessDraft, setGuessDraft] = useState({ time: "", description: "" });
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  const addGuess = () => {
-    if (!guessCharId || !guessDraft.time || !guessDraft.description.trim())
-      return;
-    setGuesses((prev) => {
-      const next = {
-        ...prev,
-        [guessCharId]: [
-          ...(prev[guessCharId] ?? []),
-          { id: uid(), ...guessDraft },
-        ],
-      };
-      try {
-        localStorage.setItem(GUESS_KEY, JSON.stringify(next));
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
-    setGuessDraft({ time: "", description: "" });
-  };
-
-  const removeGuess = (charId: string, id: string) => {
-    setGuesses((prev) => {
-      const next = {
-        ...prev,
-        [charId]: (prev[charId] ?? []).filter((g) => g.id !== id),
-      };
-      try {
-        localStorage.setItem(GUESS_KEY, JSON.stringify(next));
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
-  };
-
-  const correctByChar = useMemo(() => {
-    const m = new Map<string, { time: string; description: string }[]>();
-    game.characters.forEach((c) => {
-      const evs = game.timelineEvents
-        .filter((e) => e.revealed && e.characterIds.includes(c.id))
-        .map((e) => ({ time: e.time, description: e.description }));
-      m.set(c.id, evs);
-    });
-    return m;
-  }, [game.characters, game.timelineEvents]);
-
-  const hasTimeline = (charId: string): boolean =>
-    (correctByChar.get(charId) ?? []).length > 0;
-
-  const isCharacterSolved = (charId: string): boolean => {
-    const correct = correctByChar.get(charId) ?? [];
-    if (correct.length === 0) return true;
-    const guessed = guesses[charId] ?? [];
-    if (guessed.length !== correct.length) return false;
-    const correctSet = new Set(
-      correct.map((e) => `${e.time}|${normalize(e.description)}`),
-    );
-    const guessedSet = new Set(
-      guessed.map((g) => `${g.time}|${normalize(g.description)}`),
-    );
-    if (correctSet.size !== guessedSet.size) return false;
-    for (const key of Array.from(correctSet)) {
-      if (!guessedSet.has(key)) return false;
-    }
-    return true;
-  };
-
-  const visibleEvents = useMemo(
-    () =>
-      [...game.timelineEvents]
-        .filter((e) => e.revealed)
-        .sort((a, b) => a.time.localeCompare(b.time)),
-    [game.timelineEvents],
+  const sortedEvents = useMemo(
+    () => [...events].sort((a, b) => a.time.localeCompare(b.time)),
+    [events],
   );
 
   const laneCharIds = useMemo(() => {
@@ -214,19 +125,8 @@ export default function CaseTimeline({
           (theme.roleOrder[a.role] ?? 99) - (theme.roleOrder[b.role] ?? 99),
       )
       .map((c) => c.id);
-    return computeLaneOrder(allCharacterIds, visibleEvents);
-  }, [visibleEvents, game.characters]);
-
-  // Hardcoded true for now — restore the real check below once character
-  // selection is confirmed working.
-  const allSolved = true;
-  // const allSolved =
-  //   laneCharIds.length > 0 && laneCharIds.every((id) => isCharacterSolved(id));
-
-  useEffect(() => {
-    onSolvedChange?.(allSolved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSolved]);
+    return computeLaneOrder(allCharacterIds, sortedEvents);
+  }, [sortedEvents, game.characters]);
 
   const charById = useMemo(
     () => new Map(game.characters.map((c) => [c.id, c])),
@@ -242,26 +142,26 @@ export default function CaseTimeline({
   }, [laneCharIds]);
 
   const minMinutes = useMemo(() => {
-    if (visibleEvents.length === 0) return 0;
-    return Math.min(...visibleEvents.map((e) => toMinutes(e.time)));
-  }, [visibleEvents]);
+    if (sortedEvents.length === 0) return 0;
+    return Math.min(...sortedEvents.map((e) => toMinutes(e.time)));
+  }, [sortedEvents]);
 
   const maxMinutes = useMemo(() => {
-    if (visibleEvents.length === 0) return 0;
-    return Math.max(...visibleEvents.map((e) => toMinutes(e.time)));
-  }, [visibleEvents]);
+    if (sortedEvents.length === 0) return 0;
+    return Math.max(...sortedEvents.map((e) => toMinutes(e.time)));
+  }, [sortedEvents]);
 
   const timeToX = (minutes: number) =>
     PAD_X + (minutes - minMinutes) * PX_PER_MIN;
 
   const eventX = useMemo(() => {
     const m = new Map<string, number>();
-    visibleEvents.forEach((e) => m.set(e.id, timeToX(toMinutes(e.time))));
+    sortedEvents.forEach((e) => m.set(e.id, timeToX(toMinutes(e.time))));
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleEvents, minMinutes]);
+  }, [sortedEvents, minMinutes]);
 
-  const eventY = (e: TimelineEvent) => {
+  const eventY = (e: PlayerTimelineEvent) => {
     if (e.characterIds.length <= 1) return laneY.get(e.characterIds[0]) ?? 0;
     const ys = e.characterIds
       .map((id) => laneY.get(id))
@@ -270,14 +170,14 @@ export default function CaseTimeline({
   };
 
   const ticks = useMemo(() => {
-    if (visibleEvents.length === 0) return [];
+    if (sortedEvents.length === 0) return [];
     const first =
       Math.floor(minMinutes / TICK_INTERVAL_MIN) * TICK_INTERVAL_MIN;
     const last = Math.ceil(maxMinutes / TICK_INTERVAL_MIN) * TICK_INTERVAL_MIN;
     const result: number[] = [];
     for (let t = first; t <= last; t += TICK_INTERVAL_MIN) result.push(t);
     return result;
-  }, [minMinutes, maxMinutes, visibleEvents.length]);
+  }, [minMinutes, maxMinutes, sortedEvents.length]);
 
   const lastTick = ticks[ticks.length - 1] ?? maxMinutes;
   const graphY = laneCharIds.length * LANE_HEIGHT;
@@ -286,39 +186,39 @@ export default function CaseTimeline({
   const svgWidth = Math.max(timeToX(lastTick), timeToX(maxMinutes)) + PAD_X;
   const svgHeight = graphY + AXIS_HEIGHT;
 
-  const selected = game.timelineEvents.find((e) => e.id === selectedId) ?? null;
+  const selected = events.find((e) => e.id === selectedId) ?? null;
 
   return (
     <>
-      <div
-        style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}
-      >
+      <div style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}>
         <div
           style={styles.titleCheckBtn}
           title={
-            allSolved
-              ? "Alla karaktärers tidslinjer är lösta"
-              : "Inte alla karaktärers tidslinjer är lösta än"
+            solved
+              ? "Din tidslinje stämmer med den riktiga"
+              : "Din tidslinje stämmer inte än"
           }
         >
           <span
             style={{
               ...sharedStyles.pillCheckCircle,
-              ...(allSolved ? sharedStyles.pillCheckCircleDone : {}),
+              ...(solved ? sharedStyles.pillCheckCircleDone : {}),
             }}
           >
-            {allSolved && <Check size={12} color={theme.primaryText} />}
+            {solved && <Check size={12} color={theme.primaryText} />}
           </span>
         </div>
         <div style={styles.headerSpacer} />
-        <button style={styles.addEventBtn} onClick={startCreateEvent}>
+        <button style={styles.addEventBtn} onClick={startCreate}>
           <Plus size={15} /> Händelse
         </button>
       </div>
 
       <div style={styles.card}>
         {laneCharIds.length === 0 ? (
-          <div style={styles.empty}>No timeline events yet.</div>
+          <div style={styles.empty}>
+            Inga händelser tillagda än. Lägg till vad du tror hände.
+          </div>
         ) : (
           <div style={styles.graphWrap}>
             <div style={styles.laneLabels}>
@@ -351,19 +251,8 @@ export default function CaseTimeline({
                       borderBottomRightRadius: roundBottom ? 32 : 0,
                     }}
                   >
-                    <div
-                      style={{
-                        ...styles.laneAvatar,
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setGuessCharId(id)}
-                      title={c?.name}
-                    >
-                      {hasTimeline(id) && isCharacterSolved(id) ? (
-                        <div style={styles.laneSolvedCheck}>
-                          <Check size={18} color={theme.primaryText} />
-                        </div>
-                      ) : c?.imageUrl ? (
+                    <div style={styles.laneAvatar} title={c?.name}>
+                      {c?.imageUrl ? (
                         <img
                           src={c.imageUrl}
                           alt={c.name}
@@ -373,7 +262,6 @@ export default function CaseTimeline({
                         <User size={20} color={theme.textFaint} />
                       )}
                     </div>
-                    {/*  <span style={styles.laneName}>{c?.initials ?? "?"}</span> */}
                   </div>
                 );
               })}
@@ -435,7 +323,7 @@ export default function CaseTimeline({
                   );
                 })}
                 {laneCharIds.map((id) => {
-                  const evs = visibleEvents.filter((e) =>
+                  const evs = sortedEvents.filter((e) =>
                     e.characterIds.includes(id),
                   );
                   if (evs.length < 2) return null;
@@ -470,7 +358,9 @@ export default function CaseTimeline({
                       key={id}
                       d={d}
                       fill="none"
-                      stroke={theme.roleColors[role ?? ""] ?? theme.divider}
+                      stroke={
+                        theme.roleColors[role ?? ""] ?? theme.divider
+                      }
                       strokeWidth={2.5}
                       strokeDasharray={strokeDasharray}
                       opacity={0.55}
@@ -478,7 +368,7 @@ export default function CaseTimeline({
                   );
                 })}
 
-                {visibleEvents.map((e) => {
+                {sortedEvents.map((e) => {
                   const x = eventX.get(e.id)!;
                   const y = eventY(e);
                   const isMerge = e.characterIds.length > 1;
@@ -510,23 +400,35 @@ export default function CaseTimeline({
           <Modal onClose={() => setSelectedId(null)}>
             <div style={styles.detailTop}>
               <div style={styles.detailTime}>
-                <Clock size={12} /> {selected.time || "Unknown time"}
+                <Clock size={12} /> {selected.time || "Okänd tid"}
               </div>
-              <button
-                style={sharedStyles.iconBtn}
-                onClick={() => startEditEvent(selected)}
-                title="Redigera händelse"
-              >
-                <Edit2 size={15} />
-              </button>
+              <div style={styles.detailActions}>
+                <button
+                  style={sharedStyles.iconBtn}
+                  onClick={() => startEdit(selected)}
+                  title="Redigera"
+                >
+                  <Edit2 size={15} />
+                </button>
+                <button
+                  style={{ ...sharedStyles.iconBtn, color: theme.primary }}
+                  onClick={() => {
+                    onRemoveEvent(selected.id);
+                    setSelectedId(null);
+                  }}
+                  title="Ta bort"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
             <p style={styles.detailDesc}>
-              {selected.description || "No details added."}
+              {selected.description || "Ingen beskrivning tillagd."}
             </p>
             <div style={styles.detailChips}>
               {selected.characterIds.map((id) => (
                 <span key={id} style={styles.detailChip}>
-                  {charById.get(id)?.name ?? "Unknown"}
+                  {charById.get(id)?.name ?? "Okänd"}
                 </span>
               ))}
             </div>
@@ -534,123 +436,28 @@ export default function CaseTimeline({
         )}
       </div>
 
-      {showEventForm && (
+      {showForm && (
         <TimelineEventFormModal
-          creating={creatingEvent}
-          draft={eventDraft}
+          creating={creating}
+          draft={draft}
           characters={game.characters}
-          onChange={setEventDraft}
-          onCancel={cancelEventForm}
-          onSave={saveEventForm}
+          onChange={setDraft}
+          onCancel={cancelForm}
+          onSave={saveForm}
+          showRevealedToggle={false}
         />
-      )}
-
-      {pickerOpen && (
-        <Modal onClose={() => setPickerOpen(false)}>
-          <h3 style={styles.formTitle}>Vems tidslinje vill du lägga till?</h3>
-          <div style={styles.charPicker}>
-            {game.characters.map((c) => (
-              <CharacterPill
-                key={c.id}
-                character={c}
-                selected={false}
-                onClick={() => {
-                  setGuessCharId(c.id);
-                  setPickerOpen(false);
-                }}
-              />
-            ))}
-          </div>
-        </Modal>
-      )}
-
-      {guessCharId && (
-        <Modal onClose={() => setGuessCharId(null)}>
-          <h3 style={styles.formTitle}>
-            {charById.get(guessCharId)?.name ?? "Karaktär"}s tidslinje
-          </h3>
-          <div style={styles.formRow}>
-            <input
-              type="time"
-              style={styles.timeInput}
-              value={guessDraft.time}
-              onChange={(e) =>
-                setGuessDraft((d) => ({ ...d, time: e.target.value }))
-              }
-            />
-          </div>
-          <textarea
-            style={styles.textarea}
-            value={guessDraft.description}
-            onChange={(e) =>
-              setGuessDraft((d) => ({ ...d, description: e.target.value }))
-            }
-            placeholder="Vad hände vid den här tiden?"
-            rows={2}
-          />
-          <div style={sharedStyles.formActions}>
-            <button style={styles.btn} onClick={addGuess}>
-              <Plus size={15} /> Lägg till händelse
-            </button>
-          </div>
-
-          {(guesses[guessCharId] ?? []).length > 0 && (
-            <div style={styles.guessList}>
-              {(guesses[guessCharId] ?? []).map((g) => (
-                <div key={g.id} style={styles.guessListItem}>
-                  <span style={styles.guessListTime}>{g.time}</span>
-                  <span style={styles.guessListDesc}>{g.description}</span>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() => removeGuess(guessCharId, g.id)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {isCharacterSolved(guessCharId) ? (
-            <p style={styles.guessCorrect}>Rätt! Tidslinjen stämmer.</p>
-          ) : (
-            <p style={styles.guessIncorrect}>Tidslinjen stämmer inte än.</p>
-          )}
-        </Modal>
       )}
     </>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  scrollHint: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
-    marginTop: 2,
-    fontSize: 12,
-    color: theme.textMuted,
-  },
   headerSpacer: { flex: 1 },
   titleCheckBtn: {
     background: "none",
     border: "none",
     outline: "none",
     padding: 0,
-  },
-  btn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: theme.textFaint,
-    color: theme.primaryText,
-    border: "none",
-    borderRadius: 7,
-    padding: "7px 14px",
-    fontWeight: 700,
-    fontSize: 13,
-    cursor: "pointer",
   },
   addEventBtn: {
     display: "flex",
@@ -663,19 +470,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "7px 16px",
     fontWeight: 700,
     fontSize: 13,
-    cursor: "pointer",
-  },
-  btnSecondary: {
-    display: "flex",
-    borderRadius: 7,
-    alignItems: "center",
-    gap: 6,
-    background: theme.secondaryBg,
-    color: theme.secondaryText,
-    border: "none",
-    padding: "8px 16px",
-    fontWeight: 600,
-    fontSize: 14,
     cursor: "pointer",
   },
   card: {
@@ -725,22 +519,6 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     flexShrink: 0,
   },
-  laneSolvedCheck: {
-    width: "100%",
-    height: "100%",
-    background: theme.success,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  laneName: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: theme.text,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
   graphScroll: {
     marginTop: 4,
     overflowX: "auto",
@@ -765,6 +543,7 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  detailActions: { display: "flex", gap: 8 },
   detailDesc: {
     margin: "0 0 10px",
     fontSize: 14,
@@ -778,70 +557,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: theme.textFaint,
     padding: "2px 8px",
     borderRadius: 20,
-  },
-  formTitle: {
-    margin: "0 0 12px",
-    fontSize: 15,
-    fontWeight: 600,
-    color: theme.textFaint,
-  },
-  formRow: { display: "flex", alignItems: "center", gap: 16, marginBottom: 10 },
-  timeInput: {
-    background: theme.cardBg,
-    border: `1px solid ${theme.inputBorder}`,
-    borderRadius: 7,
-    color: theme.text,
-    padding: "7px 10px",
-    fontSize: 14,
-    fontFamily: "inherit",
-  },
-  textarea: {
-    width: "100%",
-    background: theme.cardBg,
-    border: `1px solid ${theme.inputBorder}`,
-    borderRadius: 7,
-    color: theme.text,
-    padding: "8px 12px",
-    fontSize: 14,
-    fontFamily: "inherit",
-    resize: "vertical",
-    boxSizing: "border-box",
-    marginBottom: 10,
-  },
-  charPicker: { display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 },
-  guessList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    marginTop: 0,
-  },
-  guessListItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    background: theme.inputBg,
-    border: `1px solid ${theme.inputBorder}`,
-    borderRadius: 7,
-    padding: "6px 10px",
-  },
-  guessListTime: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: theme.textFaint,
-    flexShrink: 0,
-  },
-  guessListDesc: { fontSize: 13, color: theme.text, flex: 1 },
-  guessCorrect: {
-    marginTop: 12,
-    marginBottom: 0,
-    fontSize: 14,
-    fontWeight: 700,
-    color: theme.success,
-  },
-  guessIncorrect: {
-    marginTop: 12,
-    marginBottom: 0,
-    fontSize: 13,
-    color: theme.textMuted,
   },
 };

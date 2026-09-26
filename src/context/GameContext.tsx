@@ -83,6 +83,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const [
           settings,
           characters,
+          clues,
           timelineEvents,
           evidence,
           documents,
@@ -91,6 +92,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         ] = await Promise.all([
           api.getGame(),
           api.getCharacters(),
+          api.getClues(),
           api.getTimelineEvents(),
           api.getEvidence(),
           api.getDocuments(),
@@ -102,6 +104,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           ...g,
           ...settings,
           characters,
+          clues,
           timelineEvents,
           evidence,
           documents,
@@ -167,18 +170,32 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     api.deleteCharacter(id).catch(reportError);
   };
 
-  // --- Clues / Scenes: no active page reads these yet, so they stay
-  // local-only for now instead of wiring up unused backend endpoints.
-  const addClue = (c: Omit<Clue, "id">) =>
-    setGame((g) => ({ ...g, clues: [...g.clues, { ...c, id: uid() }] }));
-  const updateClue = (c: Clue) =>
+  // --- Clues ---
+  const addClue = (c: Omit<Clue, "id">) => {
+    api
+      .createClue(c)
+      .then((created) =>
+        setGame((g) => ({ ...g, clues: [...g.clues, created] })),
+      )
+      .catch(reportError);
+  };
+  const updateClue = (c: Clue) => {
     setGame((g) => ({
       ...g,
       clues: g.clues.map((x) => (x.id === c.id ? c : x)),
     }));
-  const removeClue = (id: string) =>
-    setGame((g) => ({ ...g, clues: g.clues.filter((x) => x.id !== id) }));
+    api.updateClue(c.id, c).catch(reportError);
+  };
+  const removeClue = (id: string) => {
+    setGame((g) => ({
+      ...g,
+      clues: g.clues.filter((x) => x.id !== id),
+    }));
+    api.deleteClue(id).catch(reportError);
+  };
 
+  // --- Scenes: no active page reads these yet, so they stay local-only for
+  // now instead of wiring up the (also unused) backend endpoints.
   const addScene = (s: Omit<Scene, "id" | "order">) =>
     setGame((g) => ({
       ...g,

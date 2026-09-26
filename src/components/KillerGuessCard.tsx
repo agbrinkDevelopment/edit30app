@@ -18,7 +18,11 @@ import { PROGRESS_KEY } from "../shared/data";
 import { theme } from "../theme";
 import { useGameTimer } from "../context/GameTimerContext";
 
-export default function KillerGuessCard() {
+export default function KillerGuessCard({
+  tidslinjeSolved,
+}: {
+  tidslinjeSolved: boolean;
+}) {
   const [guessResult, setGuessResult] = useState<"correct" | "wrong" | null>(
     null,
   );
@@ -39,9 +43,6 @@ export default function KillerGuessCard() {
   const allBucketsChecked =
     clueBucketCharacters.length > 0 &&
     clueBucketCharacters.every((c) => isBucketSolved(c.id, itemBucket));
-  // Hardcoded true for now, matching CaseTimeline.tsx's temporary override —
-  // restore a real cross-component "solved" signal once that's wired up.
-  const tidslinjeSolved = true;
 
   const mysterySteps = [
     { id: "kartan", label: "Kartan", done: !!progress["kartan"] },

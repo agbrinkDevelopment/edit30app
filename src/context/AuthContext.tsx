@@ -5,6 +5,9 @@ export type Role = 'admin' | 'player';
 export interface Session {
   team: string;
   role: Role;
+  // Set once /players/sign-in has resolved (role === 'player' only). Absent
+  // for admins and, briefly, for a player whose sign-in request is in flight.
+  playerId?: string;
 }
 
 interface AuthContextType extends Session {
