@@ -47,6 +47,7 @@ export default function SignIn({ onSignIn }: Props) {
     <div style={styles.page}>
       {/* Left floral strip */}
       <div
+        className="signin-floral"
         style={{
           ...styles.floralStrip,
           left: 0,
@@ -55,6 +56,7 @@ export default function SignIn({ onSignIn }: Props) {
       />
       {/* Right floral strip */}
       <div
+        className="signin-floral"
         style={{
           ...styles.floralStrip,
           right: 0,
@@ -63,9 +65,13 @@ export default function SignIn({ onSignIn }: Props) {
         }}
       />
 
-      <div style={styles.content}>
-        <h1 style={styles.title}>Edit 30 år</h1>
-        <p style={styles.subtitle}>Mordmysterium</p>
+      <div className="signin-content" style={styles.content}>
+        <h1 className="signin-title" style={styles.title}>
+          Edit 30 år
+        </h1>
+        <p className="signin-subtitle" style={styles.subtitle}>
+          Mordmysterium
+        </p>
 
         <div
           style={{
@@ -131,6 +137,12 @@ export default function SignIn({ onSignIn }: Props) {
           40%       { transform: translateX(8px); }
           60%       { transform: translateX(-6px); }
           80%       { transform: translateX(6px); }
+        }
+        @media (max-width: 480px) {
+          .signin-floral { display: none !important; }
+          .signin-content { padding: 32px 16px !important; }
+          .signin-title { font-size: 44px !important; }
+          .signin-subtitle { font-size: 24px !important; margin-bottom: 20px !important; }
         }
       `}</style>
     </div>

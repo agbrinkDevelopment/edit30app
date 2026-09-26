@@ -1,6 +1,5 @@
 import React from "react";
 import { useGame } from "../context/GameContext";
-import { useAuth } from "../context/AuthContext";
 import CaseTimeline from "../components/CaseTimeline";
 import CityMap from "../components/CityMap";
 import { loadProgress } from "../shared/helpers";
@@ -14,7 +13,6 @@ import CluesCard from "../components/CluesCard";
 
 export default function Overview() {
   const { game } = useGame();
-  const { isAdmin } = useAuth();
   const { started } = useGameTimer();
 
   const victim = game.characters.find((c) => c.role === "victim");
@@ -72,7 +70,6 @@ export default function Overview() {
           <SpotlightCard
             character={detective}
             game={game}
-            isAdmin={isAdmin}
             progress={progress}
             onToggleDone={toggleStep}
           />
@@ -84,7 +81,6 @@ export default function Overview() {
           <SpotlightCard
             character={victim}
             game={game}
-            isAdmin={isAdmin}
             progress={progress}
             onToggleDone={toggleStep}
           />
@@ -96,7 +92,6 @@ export default function Overview() {
           <CharacterGrid
             characters={suspects}
             game={game}
-            isAdmin={isAdmin}
             progress={progress}
             onToggleDone={toggleStep}
           />
@@ -108,7 +103,6 @@ export default function Overview() {
           <CharacterGrid
             characters={witnesses}
             game={game}
-            isAdmin={isAdmin}
             progress={progress}
             onToggleDone={toggleStep}
           />
@@ -117,5 +111,3 @@ export default function Overview() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {};

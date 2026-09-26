@@ -69,5 +69,6 @@ export interface GameState {
   evidence: EvidenceType[];
   documents: GameDocument[];
   newsArticles: GameDocument[];
+  victimNotes: GameDocument[];
   killerRevealed: boolean;
 }

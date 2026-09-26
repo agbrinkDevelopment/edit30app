@@ -1,23 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Clock,
-  Eye,
-  EyeOff,
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  Check,
-  User,
-  ArrowRight,
-} from "lucide-react";
+import { Clock, Edit2, Plus, Trash2, Check, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
-import { useAuth } from "../context/AuthContext";
 import { TimelineEvent } from "../types";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Modal from "./Modal";
 import CharacterPill from "./CharacterPill";
+import TimelineEventFormModal, {
+  emptyTimelineEventDraft,
+} from "./TimelineEventFormModal";
 
 const LANE_HEIGHT = 56;
 const PX_PER_MIN = 5;
@@ -66,18 +57,6 @@ function computeLaneOrder(
   return order;
 }
 
-const emptyDraft = (): {
-  time: string;
-  description: string;
-  characterIds: string[];
-  revealed: boolean;
-} => ({
-  time: "",
-  description: "",
-  characterIds: [],
-  revealed: true,
-});
-
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 interface TimelineGuess {
@@ -110,18 +89,41 @@ export default function CaseTimeline({
 }: {
   onSolvedChange?: (solved: boolean) => void;
 } = {}) {
-  const {
-    game,
-    addTimelineEvent,
-    updateTimelineEvent,
-    removeTimelineEvent,
-    setTimelineEventRevealed,
-  } = useGame();
-  const { isAdmin } = useAuth();
+  const { game, addTimelineEvent, updateTimelineEvent } = useGame();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(emptyDraft());
+
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [eventDraft, setEventDraft] = useState(emptyTimelineEventDraft());
+
+  const startCreateEvent = () => {
+    setEventDraft(emptyTimelineEventDraft());
+    setCreatingEvent(true);
+    setEditingEventId(null);
+  };
+  const startEditEvent = (e: TimelineEvent) => {
+    setEventDraft({
+      time: e.time,
+      description: e.description,
+      characterIds: e.characterIds,
+      revealed: e.revealed,
+    });
+    setEditingEventId(e.id);
+    setCreatingEvent(false);
+    setSelectedId(null);
+  };
+  const cancelEventForm = () => {
+    setCreatingEvent(false);
+    setEditingEventId(null);
+  };
+  const saveEventForm = () => {
+    if (!eventDraft.time || eventDraft.characterIds.length === 0) return;
+    if (creatingEvent) addTimelineEvent(eventDraft);
+    else if (editingEventId)
+      updateTimelineEvent({ ...eventDraft, id: editingEventId });
+    cancelEventForm();
+  };
+  const showEventForm = creatingEvent || editingEventId;
 
   const [guesses, setGuesses] =
     useState<Record<string, TimelineGuess[]>>(loadGuesses);
@@ -200,9 +202,9 @@ export default function CaseTimeline({
   const visibleEvents = useMemo(
     () =>
       [...game.timelineEvents]
-        .filter((e) => isAdmin || e.revealed)
+        .filter((e) => e.revealed)
         .sort((a, b) => a.time.localeCompare(b.time)),
-    [game.timelineEvents, isAdmin],
+    [game.timelineEvents],
   );
 
   const laneCharIds = useMemo(() => {
@@ -284,48 +286,13 @@ export default function CaseTimeline({
   const svgWidth = Math.max(timeToX(lastTick), timeToX(maxMinutes)) + PAD_X;
   const svgHeight = graphY + AXIS_HEIGHT;
 
-  const startCreate = () => {
-    setDraft(emptyDraft());
-    setCreating(true);
-    setEditingId(null);
-    setSelectedId(null);
-  };
-  const startEdit = (e: TimelineEvent) => {
-    setDraft({
-      time: e.time,
-      description: e.description,
-      characterIds: e.characterIds,
-      revealed: e.revealed,
-    });
-    setEditingId(e.id);
-    setCreating(false);
-    setSelectedId(null);
-  };
-  const cancelForm = () => {
-    setCreating(false);
-    setEditingId(null);
-  };
-  const saveForm = () => {
-    if (!draft.time || draft.characterIds.length === 0) return;
-    if (creating) addTimelineEvent(draft);
-    else if (editingId) updateTimelineEvent({ ...draft, id: editingId });
-    cancelForm();
-  };
-  const toggleDraftChar = (id: string) => {
-    setDraft((d) => ({
-      ...d,
-      characterIds: d.characterIds.includes(id)
-        ? d.characterIds.filter((x) => x !== id)
-        : [...d.characterIds, id],
-    }));
-  };
-
   const selected = game.timelineEvents.find((e) => e.id === selectedId) ?? null;
-  const showForm = isAdmin && (creating || editingId);
 
   return (
     <>
-      <div style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}>
+      <div
+        style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}
+      >
         <div
           style={styles.titleCheckBtn}
           title={
@@ -344,10 +311,7 @@ export default function CaseTimeline({
           </span>
         </div>
         <div style={styles.headerSpacer} />
-        <button
-          style={styles.addEventBtn}
-          onClick={() => (isAdmin ? startCreate() : setPickerOpen(true))}
-        >
+        <button style={styles.addEventBtn} onClick={startCreateEvent}>
           <Plus size={15} /> Händelse
         </button>
       </div>
@@ -506,9 +470,7 @@ export default function CaseTimeline({
                       key={id}
                       d={d}
                       fill="none"
-                      stroke={
-                        theme.roleColors[role ?? ""] ?? theme.divider
-                      }
+                      stroke={theme.roleColors[role ?? ""] ?? theme.divider}
                       strokeWidth={2.5}
                       strokeDasharray={strokeDasharray}
                       opacity={0.55}
@@ -520,7 +482,6 @@ export default function CaseTimeline({
                   const x = eventX.get(e.id)!;
                   const y = eventY(e);
                   const isMerge = e.characterIds.length > 1;
-                  const isHidden = !e.revealed;
                   const isSelected = e.id === selectedId;
                   return (
                     <g
@@ -532,17 +493,9 @@ export default function CaseTimeline({
                         cx={x}
                         cy={y}
                         r={isMerge ? 10 : 7}
-                        fill={
-                          isHidden
-                            ? theme.cardBg
-                            : isMerge
-                              ? theme.accent
-                              : theme.cardBg
-                        }
-                        stroke={isHidden ? theme.textFaint : theme.accent}
+                        fill={isMerge ? theme.accent : theme.cardBg}
+                        stroke={theme.accent}
                         strokeWidth={isSelected ? 4 : 2.5}
-                        strokeDasharray={isHidden ? "3 3" : undefined}
-                        opacity={isHidden ? 0.6 : 1}
                       />
                     </g>
                   );
@@ -558,48 +511,14 @@ export default function CaseTimeline({
             <div style={styles.detailTop}>
               <div style={styles.detailTime}>
                 <Clock size={12} /> {selected.time || "Unknown time"}
-                {!selected.revealed && (
-                  <span style={styles.hiddenTag}>
-                    <EyeOff size={11} /> Hidden
-                  </span>
-                )}
               </div>
-              {isAdmin && (
-                <div style={styles.detailActions}>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() =>
-                      setTimelineEventRevealed(selected.id, !selected.revealed)
-                    }
-                    title={
-                      selected.revealed
-                        ? "Hide from players"
-                        : "Reveal to players"
-                    }
-                  >
-                    {selected.revealed ? (
-                      <EyeOff size={15} />
-                    ) : (
-                      <Eye size={15} />
-                    )}
-                  </button>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() => startEdit(selected)}
-                  >
-                    <Edit2 size={15} />
-                  </button>
-                  <button
-                    style={{ ...sharedStyles.iconBtn, color: theme.primary }}
-                    onClick={() => {
-                      removeTimelineEvent(selected.id);
-                      setSelectedId(null);
-                    }}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              )}
+              <button
+                style={sharedStyles.iconBtn}
+                onClick={() => startEditEvent(selected)}
+                title="Redigera händelse"
+              >
+                <Edit2 size={15} />
+              </button>
             </div>
             <p style={styles.detailDesc}>
               {selected.description || "No details added."}
@@ -613,52 +532,18 @@ export default function CaseTimeline({
             </div>
           </Modal>
         )}
-
-        {showForm && (
-          <Modal onClose={cancelForm}>
-            <h3 style={styles.formTitle}>
-              {creating ? "New Event" : "Edit Event"}
-            </h3>
-            <div style={styles.formRow}>
-              <input
-                type="time"
-                style={styles.timeInput}
-                value={draft.time}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, time: e.target.value }))
-                }
-              />
-            </div>
-            <textarea
-              style={styles.textarea}
-              value={draft.description}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, description: e.target.value }))
-              }
-              placeholder="What happens at this moment?"
-              rows={10}
-            />
-            <div style={styles.charPicker}>
-              {game.characters.map((c) => (
-                <CharacterPill
-                  key={c.id}
-                  character={c}
-                  selected={draft.characterIds.includes(c.id)}
-                  onClick={() => toggleDraftChar(c.id)}
-                />
-              ))}
-            </div>
-            <div style={sharedStyles.formActions}>
-              <button style={styles.btnSecondary} onClick={cancelForm}>
-                <X size={15} /> Cancel
-              </button>
-              <button style={styles.btn} onClick={saveForm}>
-                <Check size={15} /> Save
-              </button>
-            </div>
-          </Modal>
-        )}
       </div>
+
+      {showEventForm && (
+        <TimelineEventFormModal
+          creating={creatingEvent}
+          draft={eventDraft}
+          characters={game.characters}
+          onChange={setEventDraft}
+          onCancel={cancelEventForm}
+          onSave={saveEventForm}
+        />
+      )}
 
       {pickerOpen && (
         <Modal onClose={() => setPickerOpen(false)}>
@@ -733,12 +618,6 @@ export default function CaseTimeline({
           )}
         </Modal>
       )}
-
-      {/*  {laneCharIds.length > 0 && (
-        <div style={styles.scrollHint}>
-          Scrolla för mer <ArrowRight size={13} />
-        </div>
-      )} */}
     </>
   );
 }
@@ -886,19 +765,6 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  hiddenTag: {
-    display: "flex",
-    alignItems: "center",
-    gap: 3,
-    background: theme.secondaryBg,
-    color: theme.textMuted,
-    padding: "2px 6px",
-    borderRadius: 10,
-    fontSize: 10,
-    textTransform: "none" as const,
-    letterSpacing: 0,
-  },
-  detailActions: { display: "flex", gap: 8 },
   detailDesc: {
     margin: "0 0 10px",
     fontSize: 14,

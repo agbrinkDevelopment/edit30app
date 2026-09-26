@@ -10,13 +10,11 @@ import Timeline from "./Timeline";
 export default function CharacterGrid({
   characters,
   game,
-  isAdmin,
   progress,
   onToggleDone,
 }: {
   characters: Character[];
   game: GameState;
-  isAdmin: boolean;
   progress: Record<string, boolean>;
   onToggleDone: (id: string) => void;
 }) {
@@ -33,8 +31,7 @@ export default function CharacterGrid({
             key={c.id}
             style={{
               ...sharedStyles.victimCard,
-              borderColor:
-                isAdmin && c.isKiller ? theme.primary : theme.textFaint,
+              borderColor: theme.textFaint,
               borderLeft: `4px solid ${roleColor(c.role)}`,
             }}
           >
@@ -124,8 +121,7 @@ export default function CharacterGrid({
                 />
                 <Timeline
                   events={game.timelineEvents.filter(
-                    (e) =>
-                      e.characterIds.includes(c.id) && (isAdmin || e.revealed),
+                    (e) => e.characterIds.includes(c.id) && e.revealed,
                   )}
                   emptyText="No timeline events recorded yet."
                 />

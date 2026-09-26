@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { styles as sharedStyles } from "../shared/styles";
-import { useAuth } from "../context/AuthContext";
 import { useGame } from "../context/GameContext";
 import {
   AlertTriangle,
@@ -24,7 +23,6 @@ export default function KillerGuessCard() {
     null,
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { isAdmin } = useAuth();
   const { game } = useGame();
   const { stopTimer } = useGameTimer();
 
@@ -104,10 +102,6 @@ export default function KillerGuessCard() {
         style={{
           ...sharedStyles.killerPhotoWrap,
           ...(guessResult === "wrong" ? sharedStyles.killerPhotoWrapWrong : {}),
-          opacity:
-            isAdmin && !game.killerRevealed && guessResult !== "correct"
-              ? 0.6
-              : 1,
         }}
       >
         {guessResult === "correct" ? (

@@ -544,6 +544,7 @@ export const sharedStyles: Record<string, React.CSSProperties> = {
     marginBottom: 28,
   },
   h1: { margin: 0, fontSize: 26, fontWeight: 700, color: theme.text },
+  h1Bold: { margin: 0, fontSize: 40, fontWeight: 900, color: theme.text },
   name: { fontWeight: 600, fontSize: 16, color: theme.text },
   empty: {
     color: theme.textFaint,

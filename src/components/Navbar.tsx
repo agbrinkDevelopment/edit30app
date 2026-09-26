@@ -12,6 +12,7 @@ import {
   Microscope,
   ScrollText,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useGame } from "../context/GameContext";
@@ -34,6 +35,10 @@ export default function Navbar() {
   const detective = game.characters.find((c) => c.role === "detective");
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const visibleLinks = isAdmin
+    ? [...links, { to: "/admin", label: "Admin", icon: ShieldCheck }]
+    : links;
+
   return (
     <nav style={styles.nav}>
       <div style={styles.logo}>
@@ -52,7 +57,7 @@ export default function Navbar() {
 
       <div className={`navbar-menu${menuOpen ? " open" : ""}`}>
         <div className="navbar-links" style={styles.links}>
-          {links.map(({ to, label, icon: Icon }) => (
+          {visibleLinks.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

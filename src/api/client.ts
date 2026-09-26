@@ -85,4 +85,13 @@ export const api = {
   setNewsArticleRevealed: (id: string, revealed: boolean) =>
     patch<GameDocument>(`/news-articles/${id}/revealed`, { revealed }),
   deleteNewsArticle: (id: string) => del(`/news-articles/${id}`),
+
+  getVictimNotes: () => get<GameDocument[]>("/victim-notes"),
+  createVictimNote: (d: Omit<GameDocument, "id">) =>
+    post<GameDocument>("/victim-notes", d),
+  updateVictimNote: (id: string, d: Partial<GameDocument>) =>
+    put<GameDocument>(`/victim-notes/${id}`, d),
+  setVictimNoteRevealed: (id: string, revealed: boolean) =>
+    patch<GameDocument>(`/victim-notes/${id}/revealed`, { revealed }),
+  deleteVictimNote: (id: string) => del(`/victim-notes/${id}`),
 };

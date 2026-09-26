@@ -25,6 +25,7 @@ const defaultState: GameState = {
   evidence: [],
   documents: [],
   newsArticles: [],
+  victimNotes: [],
   killerRevealed: false,
 };
 
@@ -59,6 +60,10 @@ interface GameContextType {
   updateNewsArticle: (d: GameDocument) => void;
   removeNewsArticle: (id: string) => void;
   setNewsArticleRevealed: (id: string, revealed: boolean) => void;
+  addVictimNote: (d: Omit<GameDocument, "id">) => void;
+  updateVictimNote: (d: GameDocument) => void;
+  removeVictimNote: (id: string) => void;
+  setVictimNoteRevealed: (id: string, revealed: boolean) => void;
   setKillerRevealed: (revealed: boolean) => void;
 }
 
@@ -82,6 +87,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           evidence,
           documents,
           newsArticles,
+          victimNotes,
         ] = await Promise.all([
           api.getGame(),
           api.getCharacters(),
@@ -89,6 +95,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           api.getEvidence(),
           api.getDocuments(),
           api.getNewsArticles(),
+          api.getVictimNotes(),
         ]);
         if (cancelled) return;
         setGame((g) => ({
@@ -99,6 +106,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           evidence,
           documents,
           newsArticles,
+          victimNotes,
         }));
         setError(null);
       } catch (err) {
@@ -317,6 +325,39 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     api.setNewsArticleRevealed(id, revealed).catch(reportError);
   };
 
+  // --- Victim's notes (anteckningar) ---
+  const addVictimNote = (d: Omit<GameDocument, "id">) => {
+    api
+      .createVictimNote(d)
+      .then((created) =>
+        setGame((g) => ({ ...g, victimNotes: [...g.victimNotes, created] })),
+      )
+      .catch(reportError);
+  };
+  const updateVictimNote = (d: GameDocument) => {
+    setGame((g) => ({
+      ...g,
+      victimNotes: g.victimNotes.map((x) => (x.id === d.id ? d : x)),
+    }));
+    api.updateVictimNote(d.id, d).catch(reportError);
+  };
+  const removeVictimNote = (id: string) => {
+    setGame((g) => ({
+      ...g,
+      victimNotes: g.victimNotes.filter((x) => x.id !== id),
+    }));
+    api.deleteVictimNote(id).catch(reportError);
+  };
+  const setVictimNoteRevealed = (id: string, revealed: boolean) => {
+    setGame((g) => ({
+      ...g,
+      victimNotes: g.victimNotes.map((x) =>
+        x.id === id ? { ...x, revealed } : x,
+      ),
+    }));
+    api.setVictimNoteRevealed(id, revealed).catch(reportError);
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -350,6 +391,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         updateNewsArticle,
         removeNewsArticle,
         setNewsArticleRevealed,
+        addVictimNote,
+        updateVictimNote,
+        removeVictimNote,
+        setVictimNoteRevealed,
         setKillerRevealed,
       }}
     >

@@ -82,10 +82,17 @@ export default function CityMap({
           key={selected.id}
           title="Karta över Uppsala"
           src={osmEmbedUrl(selected.lat, selected.lon)}
+          className="citymap-iframe"
           style={styles.iframe}
           loading="lazy"
         />
       </div>
+
+      <style>{`
+        @media (max-width: 480px) {
+          .citymap-iframe { height: 240px !important; }
+        }
+      `}</style>
     </div>
   );
 }

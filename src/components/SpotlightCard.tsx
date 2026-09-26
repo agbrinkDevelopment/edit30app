@@ -11,13 +11,11 @@ import Timeline from "./Timeline";
 export default function SpotlightCard({
   character,
   game,
-  isAdmin,
   progress,
   onToggleDone,
 }: {
   character: Character;
   game: GameState;
-  isAdmin: boolean;
   progress: Record<string, boolean>;
   onToggleDone: (id: string) => void;
 }) {
@@ -119,9 +117,7 @@ export default function SpotlightCard({
           />
           <Timeline
             events={game.timelineEvents.filter(
-              (e) =>
-                e.characterIds.includes(character.id) &&
-                (isAdmin || e.revealed),
+              (e) => e.characterIds.includes(character.id) && e.revealed,
             )}
             emptyText="No timeline events recorded yet."
           />

@@ -1,12 +1,19 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 import { GameProvider, useGame } from "./context/GameContext";
 import { GameTimerProvider, resetGameTimer } from "./context/GameTimerContext";
-import { AuthProvider, Session, Role } from "./context/AuthContext";
+import { AuthProvider, Session, Role, useAuth } from "./context/AuthContext";
 import { theme } from "./theme";
 import Navbar from "./components/Navbar";
 import InfoButton from "./components/InfoButton";
 import GameStartButton from "./components/GameStartButton";
+import GameInfoCard from "./components/GameInfoCard";
 import SideNavbar from "./components/SideNavbar";
 import { styles as sharedStyles } from "./shared/styles";
 import Overview from "./pages/Overview";
@@ -19,6 +26,7 @@ import Evidence from "./pages/Evidence";
 import Handelseforloppet from "./pages/Handelseforloppet";
 import Dokument from "./pages/Documents";
 import SignIn from "./pages/SignIn";
+import Admin from "./pages/Admin";
 
 function loadSession(): Session | null {
   const team = localStorage.getItem("mystery-team");
@@ -115,9 +123,19 @@ function AppShell() {
             align-items: flex-start;
           }
         }
+        @media (max-width: 480px) {
+          .app-pagewrap { padding: 16px !important; gap: 20px !important; }
+        }
       `}</style>
     </BrowserRouter>
   );
+}
+
+// Gate for /admin: only admins may render its children, everyone else is
+// sent back to the front page.
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { isAdmin } = useAuth();
+  return isAdmin ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 // Three-column app shell: the game timer (plus the section nav, on Overview
@@ -134,6 +152,7 @@ function AppLayout() {
       </div>
 
       <div style={sharedStyles.page}>
+        <GameInfoCard />
         <Routes>
           <Route path="/" element={<Overview />} />
           {/* <Route path="/characters" element={<Characters />} /> */}
@@ -147,6 +166,14 @@ function AppLayout() {
           <Route path="/evidence" element={<Evidence />} />
           {/* <Route path="/handelseforloppet" element={<Handelseforloppet />} /> */}
           {/* <Route path="/dokument" element={<Dokument />} /> */}
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <Admin />
+              </RequireAdmin>
+            }
+          />
         </Routes>
       </div>
 
@@ -154,5 +181,3 @@ function AppLayout() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {};
