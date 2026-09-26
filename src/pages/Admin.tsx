@@ -54,13 +54,13 @@ export default function Admin() {
         <TimelineAdmin />
       </Section>
 
-      <Section id="admin-bevis" title="Bevis">
+      {/*       <Section id="admin-bevis" title="Bevis">
         <EvidenceAdmin />
-      </Section>
+      </Section> */}
 
-      <Section id="admin-spar" title="Spår">
+      {/*       <Section id="admin-spar" title="Spår">
         <ClueAdmin />
-      </Section>
+      </Section> */}
 
       <Section id="admin-dokument" title="Förhörsdokument">
         <DocumentAdmin kind="document" />
@@ -209,8 +209,13 @@ function TimelineAdmin() {
 // ---------------------------------------------------------------------------
 
 function EvidenceAdmin() {
-  const { game, addEvidence, updateEvidence, removeEvidence, setEvidenceRevealed } =
-    useGame();
+  const {
+    game,
+    addEvidence,
+    updateEvidence,
+    removeEvidence,
+    setEvidenceRevealed,
+  } = useGame();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -365,7 +370,11 @@ function ClueAdmin() {
     if (creating) addClue({ ...draft, revealedBy: "" });
     else if (editingId) {
       const existing = game.clues.find((c) => c.id === editingId);
-      updateClue({ ...draft, revealedBy: existing?.revealedBy ?? "", id: editingId });
+      updateClue({
+        ...draft,
+        revealedBy: existing?.revealedBy ?? "",
+        id: editingId,
+      });
     }
     cancel();
   };
