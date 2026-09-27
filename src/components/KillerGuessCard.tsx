@@ -48,7 +48,7 @@ export default function KillerGuessCard({
           window.confetti?.({
             particleCount: 240,
             spread: 120,
-            startVelocity: 100,
+            startVelocity: 50,
             origin: { y: 0.6 },
             disableForReducedMotion: true,
           });
