@@ -111,7 +111,8 @@ export const api = {
     patch<GameDocument>(`/victim-notes/${id}/revealed`, { revealed }),
   deleteVictimNote: (id: string) => del(`/victim-notes/${id}`),
 
-  signInPlayer: (team: string) => post<Player>("/players/sign-in", { team }),
+  signInPlayer: (team: string, role: "admin" | "player") =>
+    post<Player>("/players/sign-in", { team, role }),
   getPlayerTimelineEvents: (playerId: string) =>
     get<PlayerTimelineEvent[]>(`/players/${playerId}/timeline-events`),
   createPlayerTimelineEvent: (

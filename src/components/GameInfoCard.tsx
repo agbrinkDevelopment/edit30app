@@ -16,6 +16,7 @@ export default function GameInfoCard() {
 
   return (
     <div style={styles.card}>
+      <p style={styles.subtitle}>Mordmysterium</p>
       <div style={styles.header}>
         <InfoIcon size={25} color={theme.textFaint} />
         <h2 style={sharedStyles.sectionTitle}>{game.title}</h2>
@@ -39,10 +40,19 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 8,
   },
+  subtitle: {
+    fontFamily: "'Creepster', cursive",
+    fontSize: 34,
+    fontWeight: 400,
+    color: "#a40000",
+    paddingBottom: 10,
+    margin: 0,
+    borderBottom: `2px solid ${theme.cardBorder}`,
+  },
   header: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   text: {
     margin: 0,

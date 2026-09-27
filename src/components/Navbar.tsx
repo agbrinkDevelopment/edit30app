@@ -247,6 +247,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   signOut: {
+    boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
     display: "flex",
     alignItems: "center",
     gap: 8,

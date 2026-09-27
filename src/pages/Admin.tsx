@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useGame } from "../context/GameContext";
-import { TimelineEvent, EvidenceType, Clue, GameDocument } from "../types";
+import { TimelineEvent, GameDocument } from "../types";
 import {
   Plus,
   Trash2,
@@ -20,10 +20,6 @@ import Modal from "../components/Modal";
 import TimelineEventFormModal, {
   emptyTimelineEventDraft,
 } from "../components/TimelineEventFormModal";
-import EvidenceFormModal, {
-  emptyEvidenceDraft,
-} from "../components/EvidenceFormModal";
-import ClueFormModal, { emptyClueDraft } from "../components/ClueFormModal";
 
 const emptyDocument = (): Omit<GameDocument, "id"> => ({
   title: "",
@@ -35,8 +31,6 @@ const emptyDocument = (): Omit<GameDocument, "id"> => ({
   revealed: true,
 });
 
-// The admin-only backstage for edit30: everything a game master needs to
-// author and reveal content, kept out of the pages the players see.
 export default function Admin() {
   const { game } = useGame();
   const victim = game.characters.find((c) => c.role === "victim");
@@ -46,21 +40,13 @@ export default function Admin() {
 
   return (
     <div style={sharedStyles.pagePadded}>
-      <div style={sharedStyles.header}>
+      <div style={styles.header}>
         <h1 style={sharedStyles.h1Bold}>Adminpanel</h1>
       </div>
 
       <Section id="admin-tidslinje" title="Tidslinje">
         <TimelineAdmin />
       </Section>
-
-      {/*       <Section id="admin-bevis" title="Bevis">
-        <EvidenceAdmin />
-      </Section> */}
-
-      {/*       <Section id="admin-spar" title="Spår">
-        <ClueAdmin />
-      </Section> */}
 
       <Section id="admin-dokument" title="Förhörsdokument">
         <DocumentAdmin kind="document" />
@@ -76,10 +62,6 @@ export default function Admin() {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Timeline events
-// ---------------------------------------------------------------------------
 
 function TimelineAdmin() {
   const {
@@ -192,254 +174,6 @@ function TimelineAdmin() {
 
       {showForm && (
         <TimelineEventFormModal
-          creating={creating}
-          draft={draft}
-          characters={game.characters}
-          onChange={setDraft}
-          onCancel={cancel}
-          onSave={save}
-        />
-      )}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Evidence
-// ---------------------------------------------------------------------------
-
-function EvidenceAdmin() {
-  const {
-    game,
-    addEvidence,
-    updateEvidence,
-    removeEvidence,
-    setEvidenceRevealed,
-  } = useGame();
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(emptyEvidenceDraft());
-
-  const startCreate = () => {
-    setDraft(emptyEvidenceDraft());
-    setCreating(true);
-    setEditingId(null);
-  };
-  const startEdit = (e: EvidenceType) => {
-    setDraft({
-      title: e.title,
-      description: e.description,
-      foundAt: e.foundAt,
-      relatedCharacterIds: e.relatedCharacterIds,
-      revealed: e.revealed,
-    });
-    setEditingId(e.id);
-    setCreating(false);
-  };
-  const cancel = () => {
-    setCreating(false);
-    setEditingId(null);
-  };
-  const save = () => {
-    if (!draft.title.trim()) return;
-    if (creating) addEvidence(draft);
-    else if (editingId) updateEvidence({ ...draft, id: editingId });
-    cancel();
-  };
-
-  const showForm = creating || editingId;
-  const charById = new Map(game.characters.map((c) => [c.id, c]));
-
-  return (
-    <>
-      <div style={{ ...sharedStyles.header, marginBottom: 12 }}>
-        <button style={sharedStyles.btn} onClick={startCreate}>
-          <Plus size={16} /> Lägg till bevis
-        </button>
-      </div>
-
-      {game.evidence.length === 0 ? (
-        <div style={sharedStyles.empty}>Inga bevis än.</div>
-      ) : (
-        <div style={sharedStyles.list}>
-          {game.evidence.map((e) => (
-            <div key={e.id} style={sharedStyles.card}>
-              <div style={sharedStyles.cardTop}>
-                <div style={{ ...sharedStyles.cardMeta, flexWrap: "wrap" }}>
-                  <span style={sharedStyles.name}>{e.title}</span>
-                  {e.foundAt && (
-                    <span style={sharedStyles.location}>{e.foundAt}</span>
-                  )}
-                  {!e.revealed && (
-                    <span style={sharedStyles.hiddenTag}>
-                      <EyeOff size={11} /> Dold
-                    </span>
-                  )}
-                </div>
-                <div style={sharedStyles.cardActions}>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() => setEvidenceRevealed(e.id, !e.revealed)}
-                    title={
-                      e.revealed ? "Dölj för spelarna" : "Visa för spelarna"
-                    }
-                  >
-                    {e.revealed ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() => startEdit(e)}
-                  >
-                    <Edit2 size={15} />
-                  </button>
-                  <button
-                    style={{ ...sharedStyles.iconBtn, color: theme.primary }}
-                    onClick={() => removeEvidence(e.id)}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-              {e.description && (
-                <p style={sharedStyles.descCompact}>{e.description}</p>
-              )}
-              {e.relatedCharacterIds.length > 0 && (
-                <div style={sharedStyles.tags}>
-                  {e.relatedCharacterIds.map((id) => (
-                    <span key={id} style={sharedStyles.tag}>
-                      {charById.get(id)?.name ?? "Okänd"}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showForm && (
-        <EvidenceFormModal
-          creating={creating}
-          draft={draft}
-          characters={game.characters}
-          onChange={setDraft}
-          onCancel={cancel}
-          onSave={save}
-        />
-      )}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Clues
-// ---------------------------------------------------------------------------
-
-function ClueAdmin() {
-  const { game, addClue, updateClue, removeClue } = useGame();
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(emptyClueDraft());
-
-  const startCreate = () => {
-    setDraft(emptyClueDraft());
-    setCreating(true);
-    setEditingId(null);
-  };
-  const startEdit = (c: Clue) => {
-    setDraft({
-      title: c.title,
-      description: c.description,
-      location: c.location,
-      relatedCharacterIds: c.relatedCharacterIds,
-      isMacguffin: c.isMacguffin,
-    });
-    setEditingId(c.id);
-    setCreating(false);
-  };
-  const cancel = () => {
-    setCreating(false);
-    setEditingId(null);
-  };
-  const save = () => {
-    if (!draft.title.trim()) return;
-    // revealedBy is a narrative note this form doesn't edit; keep the
-    // existing value (or blank for a new clue) rather than clobbering it.
-    if (creating) addClue({ ...draft, revealedBy: "" });
-    else if (editingId) {
-      const existing = game.clues.find((c) => c.id === editingId);
-      updateClue({
-        ...draft,
-        revealedBy: existing?.revealedBy ?? "",
-        id: editingId,
-      });
-    }
-    cancel();
-  };
-
-  const showForm = creating || editingId;
-  const charById = new Map(game.characters.map((c) => [c.id, c]));
-
-  return (
-    <>
-      <div style={{ ...sharedStyles.header, marginBottom: 12 }}>
-        <button style={sharedStyles.btn} onClick={startCreate}>
-          <Plus size={16} /> Lägg till ledtråd
-        </button>
-      </div>
-
-      {game.clues.length === 0 ? (
-        <div style={sharedStyles.empty}>Inga ledtrådar än.</div>
-      ) : (
-        <div style={sharedStyles.list}>
-          {game.clues.map((c) => (
-            <div key={c.id} style={sharedStyles.card}>
-              <div style={sharedStyles.cardTop}>
-                <div style={{ ...sharedStyles.cardMeta, flexWrap: "wrap" }}>
-                  <span style={sharedStyles.name}>{c.title}</span>
-                  {c.location && (
-                    <span style={sharedStyles.location}>{c.location}</span>
-                  )}
-                  {c.isMacguffin && (
-                    <span style={sharedStyles.hiddenTag}>Macguffin</span>
-                  )}
-                </div>
-                <div style={sharedStyles.cardActions}>
-                  <button
-                    style={sharedStyles.iconBtn}
-                    onClick={() => startEdit(c)}
-                  >
-                    <Edit2 size={15} />
-                  </button>
-                  <button
-                    style={{ ...sharedStyles.iconBtn, color: theme.primary }}
-                    onClick={() => removeClue(c.id)}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-              {c.description && (
-                <p style={sharedStyles.descCompact}>{c.description}</p>
-              )}
-              {c.relatedCharacterIds.length > 0 && (
-                <div style={sharedStyles.tags}>
-                  {c.relatedCharacterIds.map((id) => (
-                    <span key={id} style={sharedStyles.tag}>
-                      {charById.get(id)?.name ?? "Okänd"}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showForm && (
-        <ClueFormModal
           creating={creating}
           draft={draft}
           characters={game.characters}
@@ -836,6 +570,14 @@ function Field({
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 28,
+    paddingBottom: 4,
+    borderBottom: `2px solid ${theme.textFaint}`,
+  },
   filePreview: {
     width: 56,
     height: 56,

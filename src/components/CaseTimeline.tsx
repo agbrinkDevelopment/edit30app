@@ -85,6 +85,7 @@ export default function CaseTimeline({
     setEditingId(null);
     setSelectedId(null);
   };
+
   const startEdit = (e: PlayerTimelineEvent) => {
     setDraft({
       time: e.time,
@@ -190,7 +191,9 @@ export default function CaseTimeline({
 
   return (
     <>
-      <div style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}>
+      <div
+        style={{ ...sharedStyles.pillHeaderBase, justifyContent: "flex-start" }}
+      >
         <div
           style={styles.titleCheckBtn}
           title={
@@ -358,9 +361,7 @@ export default function CaseTimeline({
                       key={id}
                       d={d}
                       fill="none"
-                      stroke={
-                        theme.roleColors[role ?? ""] ?? theme.divider
-                      }
+                      stroke={theme.roleColors[role ?? ""] ?? theme.divider}
                       strokeWidth={2.5}
                       strokeDasharray={strokeDasharray}
                       opacity={0.55}
@@ -372,11 +373,13 @@ export default function CaseTimeline({
                   const x = eventX.get(e.id)!;
                   const y = eventY(e);
                   const isMerge = e.characterIds.length > 1;
-                  const isSelected = e.id === selectedId;
+                  const isSelected = e.id !== null;
                   return (
                     <g
                       key={e.id}
-                      onClick={() => setSelectedId(isSelected ? null : e.id)}
+                      onClick={() => {
+                        setSelectedId(e.id);
+                      }}
                       style={{ cursor: "pointer" }}
                     >
                       <circle
@@ -477,7 +480,18 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${theme.textFaint}`,
     borderRadius: 16,
   },
-  empty: { color: theme.textFaint, fontSize: 14, padding: "12px 0" },
+  empty: {
+    width: "100%",
+    boxSizing: "border-box",
+    minHeight: 120,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    color: theme.textFaint,
+    fontSize: 14,
+    padding: "24px 16px",
+  },
   graphWrap: {
     borderRadius: 16,
     display: "flex",

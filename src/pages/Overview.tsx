@@ -22,8 +22,8 @@ export default function Overview() {
   const { started } = useGameTimer();
   const { playerId } = useAuth();
   const playerTimeline = usePlayerTimeline(playerId);
-  const playerEvidence = usePlayerEvidence(playerId);
-  const playerClue = usePlayerClue(playerId);
+  /* const playerEvidence = usePlayerEvidence(playerId);
+  const playerClue = usePlayerClue(playerId); */
 
   const victim = game.characters.find((c) => c.role === "victim");
   const detective = game.characters.find((c) => c.role === "detective");

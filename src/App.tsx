@@ -17,14 +17,9 @@ import GameInfoCard from "./components/GameInfoCard";
 import SideNavbar from "./components/SideNavbar";
 import { styles as sharedStyles } from "./shared/styles";
 import Overview from "./pages/Overview";
-import Characters from "./pages/Characters";
 import CharacterInvestigate from "./pages/CharacterInvestigate";
 import Compilation from "./pages/Compilation";
-import Clues from "./pages/Clues";
-import Scenes from "./pages/Scenes";
 import Evidence from "./pages/Evidence";
-import Handelseforloppet from "./pages/Handelseforloppet";
-import Dokument from "./pages/Documents";
 import SignIn from "./pages/SignIn";
 import Admin from "./pages/Admin";
 import { api } from "./api/client";
@@ -42,19 +37,13 @@ export default function App() {
   const handleSignIn = async (team: string, role: Role) => {
     localStorage.setItem("mystery-team", team);
     localStorage.setItem("mystery-role", role);
-
     let playerId: string | undefined;
-    if (role === "player") {
-      try {
-        const player = await api.signInPlayer(team);
-        playerId = player.id;
-        localStorage.setItem("mystery-player-id", playerId);
-      } catch (err) {
-        // Non-fatal: they can still play, just without a persisted timeline
-        // reconstruction until sign-in succeeds (e.g. next time).
-        // eslint-disable-next-line no-console
-        console.error("Could not register player:", err);
-      }
+    try {
+      const player = await api.signInPlayer(team, role);
+      playerId = player.id;
+      localStorage.setItem("mystery-player-id", playerId);
+    } catch (err) {
+      console.error("Could not register player:", err);
     }
     setSession({ team, role, playerId });
   };
@@ -148,41 +137,29 @@ function AppShell() {
   );
 }
 
-// Gate for /admin: only admins may render its children, everyone else is
-// sent back to the front page.
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAuth();
   return isAdmin ? <>{children}</> : <Navigate to="/" replace />;
 }
 
-// Three-column app shell: the game timer (plus the section nav, on Overview
-// only) on the left, page content in the middle, and a same-width spacer on
-// the right so the middle column stays optically centred.
 function AppLayout() {
   const isOverview = useLocation().pathname === "/";
+  const notAdmin = useLocation().pathname !== "/admin";
 
   return (
     <div className="app-pagewrap" style={sharedStyles.pageWrap}>
       <div className="app-side-left" style={sharedStyles.sideColumn}>
-        <GameStartButton />
+        {notAdmin && <GameStartButton />}
         {isOverview && <SideNavbar />}
       </div>
 
       <div style={sharedStyles.page}>
-        <GameInfoCard />
+        {notAdmin && <GameInfoCard />}
         <Routes>
           <Route path="/" element={<Overview />} />
-          {/* <Route path="/characters" element={<Characters />} /> */}
           <Route path="/characters/:id" element={<CharacterInvestigate />} />
-          <Route
-            path="/characters/:id/compilation"
-            element={<Compilation />}
-          />
-          {/* <Route path="/clues" element={<Clues />} /> */}
-          {/* <Route path="/scenes" element={<Scenes />} /> */}
+          <Route path="/characters/:id/compilation" element={<Compilation />} />
           <Route path="/evidence" element={<Evidence />} />
-          {/* <Route path="/handelseforloppet" element={<Handelseforloppet />} /> */}
-          {/* <Route path="/dokument" element={<Dokument />} /> */}
           <Route
             path="/admin"
             element={

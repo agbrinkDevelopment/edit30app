@@ -59,14 +59,12 @@ export interface GameDocument {
   revealed: boolean;
 }
 
-// A signed-in player (one per team). Created on sign-in; see App.tsx.
 export interface Player {
   id: string;
   team: string;
+  role: "admin" | "player";
 }
 
-// The player's own private reconstruction of the timeline — never the real
-// timeline_events. See usePlayerTimeline / CaseTimeline.
 export interface PlayerTimelineEvent {
   id: string;
   time: string;
@@ -74,8 +72,6 @@ export interface PlayerTimelineEvent {
   characterIds: string[];
 }
 
-// The player's own private reconstruction of the evidence — never the real
-// evidence table. See usePlayerEvidence / PlayerEvidenceCard.
 export interface PlayerEvidence {
   id: string;
   title: string;
@@ -84,9 +80,6 @@ export interface PlayerEvidence {
   relatedCharacterIds: string[];
 }
 
-// The player's own private reconstruction of the clues — never the real
-// clues table. Omits `revealedBy`: that's the admin's narrative note on how
-// a clue surfaces, not a fact the player is reconstructing.
 export interface PlayerClue {
   id: string;
   title: string;
