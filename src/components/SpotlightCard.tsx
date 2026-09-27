@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Character, GameState } from "../types";
 import { roleColor, subsectionKey } from "../shared/helpers";
 import { styles as sharedStyles } from "../shared/styles";
-import { Check, ChevronRight, User } from "lucide-react";
+import { ChevronRight, User } from "lucide-react";
 import { theme } from "../theme";
+import SectionCheckCircle from "./SectionCheckCircle";
 import SubsectionHeader from "./SubsectionHeader";
 import Timeline from "./Timeline";
 import { fileSrc } from "../api/client";
@@ -14,11 +15,14 @@ export default function SpotlightCard({
   game,
   progress,
   onToggleDone,
+  sectionId,
 }: {
   character: Character;
   game: GameState;
   progress: Record<string, boolean>;
   onToggleDone: (id: string) => void;
+  // The Overview section this card belongs to, for its hint/skip status.
+  sectionId: string;
 }) {
   const navigate = useNavigate();
   const kartanDone = !!progress[subsectionKey(character.id, "kartan")];
@@ -41,14 +45,13 @@ export default function SpotlightCard({
             : "Inte alla delar av utredningen är klara än"
         }
       >
-        <span
-          style={{
-            ...sharedStyles.cardCheckCircle,
-            ...(done ? sharedStyles.cardCheckCircleDone : {}),
-          }}
-        >
-          {done && <Check size={11} color={theme.primaryText} />}
-        </span>
+        <SectionCheckCircle
+          sectionId={sectionId}
+          done={done}
+          baseStyle={sharedStyles.cardCheckCircle}
+          doneStyle={sharedStyles.cardCheckCircleDone}
+          iconSize={11}
+        />
       </div>
       <div style={sharedStyles.victimHeader}>
         <div style={sharedStyles.victimPhoto}>

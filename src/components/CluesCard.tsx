@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Check, Image as ImageIcon, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import { theme } from "../theme";
+import SectionCheckCircle from "./SectionCheckCircle";
 import { styles as sharedStyles } from "../shared/styles";
 import { POOL_ID } from "../shared/data";
 import { fileSrc } from "../api/client";
@@ -137,19 +138,19 @@ export default function CluesCard({
             );
           })()}
       </div>
-      <span
+      <SectionCheckCircle
+        sectionId="ledtradar"
+        done={solved}
+        wrapperStyle={sharedStyles.ledtradarTabCircles}
+        baseStyle={sharedStyles.ledtradarTabCircle}
+        doneStyle={sharedStyles.subCheckCircleDone}
+        iconSize={11}
         title={
           solved
             ? "Alla ledtrådar är rätt tilldelade"
             : "Inte alla ledtrådar är rätt tilldelade än"
         }
-        style={{
-          ...sharedStyles.ledtradarTabCircle,
-          ...(solved ? sharedStyles.subCheckCircleDone : {}),
-        }}
-      >
-        {solved && <Check size={11} color={theme.primaryText} />}
-      </span>
+      />
 
       <div style={sharedStyles.sortGrid}>
         {suspects.map((c) => {

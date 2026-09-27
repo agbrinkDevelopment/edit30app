@@ -3,15 +3,17 @@ import { Clock, PlayCircle } from "lucide-react";
 import { theme } from "../theme";
 import { styles as sharedStyles } from "../shared/styles";
 import { useGameTimer } from "../context/GameTimerContext";
-
-function formatElapsed(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+import { usePlayerSections } from "../context/PlayerSectionsContext";
+import { formatElapsed } from "../shared/helpers";
 
 export default function GameStartButton() {
   const { started, elapsedSeconds, startGame } = useGameTimer();
+  const { penaltySeconds, result } = usePlayerSections();
+  // Hints and skips add to the clock; after "Utvärdera" the saved total wins.
+  const totalSeconds = result
+    ? result.totalSeconds
+    : elapsedSeconds + penaltySeconds;
+  const penalty = result ? result.penaltySeconds : penaltySeconds;
 
   if (!started) {
     return (
@@ -22,9 +24,16 @@ export default function GameStartButton() {
   }
 
   return (
-    <div style={sharedStyles.gameTimer}>
+    <div
+      style={sharedStyles.gameTimer}
+      title={
+        penalty > 0
+          ? `Varav ${formatElapsed(penalty)} tillägg för ledtrådar och överhoppade sektioner`
+          : undefined
+      }
+    >
       <span style={sharedStyles.gameTimerValue}>
-        {formatElapsed(elapsedSeconds)}
+        {formatElapsed(totalSeconds)}
       </span>
     </div>
   );

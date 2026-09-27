@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Check } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import { theme } from "../theme";
+import SectionCheckCircle from "./SectionCheckCircle";
 import { sharedStyles } from "../shared/styles";
 
 // S:t Olofsgatan 10B, Uppsala — the crime scene
@@ -51,14 +51,13 @@ export default function CityMap({
               onClick={onToggleDone}
               title={done ? "Markera som oläst" : "Markera som klar"}
             >
-              <span
-                style={{
-                  ...sharedStyles.pillCheckCircle,
-                  ...(done ? sharedStyles.pillCheckCircleDone : {}),
-                }}
-              >
-                {done && <Check size={12} color={theme.primaryText} />}
-              </span>
+              <SectionCheckCircle
+                sectionId="kartan"
+                done={!!done}
+                baseStyle={sharedStyles.pillCheckCircle}
+                doneStyle={sharedStyles.pillCheckCircleDone}
+                iconSize={12}
+              />
             </button>
           )}
         </div>

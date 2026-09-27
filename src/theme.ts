@@ -15,6 +15,10 @@ export const theme = {
   primary: "#a40000",
   primaryText: "#ffffff",
   success: "#2e7d46",
+  // Section status circles: a revealed hint, and a skipped section.
+  hint: "#e3b23c",
+  hintText: "#1a1611",
+  skipped: "#c0392b",
   secondaryBg: "#f2e8dc",
   secondaryText: "#6b4a2f",
   fontSerif: "'Cormorant Garamond', serif",

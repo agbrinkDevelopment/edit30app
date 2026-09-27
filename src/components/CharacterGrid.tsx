@@ -3,7 +3,8 @@ import { Character, GameState } from "../types";
 import { styles as sharedStyles } from "../shared/styles";
 import { roleColor, subsectionKey } from "../shared/helpers";
 import { theme } from "../theme";
-import { Check, ChevronRight, User } from "lucide-react";
+import SectionCheckCircle from "./SectionCheckCircle";
+import { ChevronRight, User } from "lucide-react";
 import SubsectionHeader from "./SubsectionHeader";
 import Timeline from "./Timeline";
 import { fileSrc } from "../api/client";
@@ -13,11 +14,14 @@ export default function CharacterGrid({
   game,
   progress,
   onToggleDone,
+  sectionId,
 }: {
   characters: Character[];
   game: GameState;
   progress: Record<string, boolean>;
   onToggleDone: (id: string) => void;
+  // The Overview section this card belongs to, for its hint/skip status.
+  sectionId: string;
 }) {
   const navigate = useNavigate();
   return (
@@ -44,14 +48,13 @@ export default function CharacterGrid({
                   : "Inte alla delar av utredningen är klara än"
               }
             >
-              <span
-                style={{
-                  ...sharedStyles.cardCheckCircle,
-                  ...(done ? sharedStyles.cardCheckCircleDone : {}),
-                }}
-              >
-                {done && <Check size={11} color={theme.primaryText} />}
-              </span>
+              <SectionCheckCircle
+                sectionId={sectionId}
+                done={done}
+                baseStyle={sharedStyles.cardCheckCircle}
+                doneStyle={sharedStyles.cardCheckCircleDone}
+                iconSize={11}
+              />
             </div>
             <div style={{ ...sharedStyles.victimHeader, marginBottom: 0 }}>
               <div style={sharedStyles.victimPhoto}>

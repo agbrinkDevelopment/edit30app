@@ -54,3 +54,10 @@ export function reportUploadError(err: unknown) {
     `Kunde inte ladda upp filen: ${err instanceof Error ? err.message : String(err)}`,
   );
 }
+
+// mm:ss, with minutes allowed past 59 (e.g. "75:03").
+export function formatElapsed(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}

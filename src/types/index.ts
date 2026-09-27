@@ -101,3 +101,38 @@ export interface GameState {
   victimNotes: GameDocument[];
   killerRevealed: boolean;
 }
+
+// The admin's per-section help, see Admin → "Tips per sektion".
+export interface SectionHint {
+  sectionId: string;
+  hint: string;
+  hintPenaltySeconds: number;
+  skipPenaltySeconds: number;
+}
+
+// A section's help as the player sees it; `hint` is null until revealed.
+export interface PlayerSection {
+  sectionId: string;
+  hasHint: boolean;
+  hint: string | null;
+  hintUsed: boolean;
+  skipped: boolean;
+  hintPenaltySeconds: number;
+  skipPenaltySeconds: number;
+}
+
+export interface GameResult {
+  playerId: string;
+  guessedCharacterId: string;
+  correct: boolean;
+  elapsedSeconds: number;
+  penaltySeconds: number;
+  totalSeconds: number;
+  sections: {
+    sectionId: string;
+    hintUsed: boolean;
+    skipped: boolean;
+    status: "correct" | "hint" | "skipped";
+  }[];
+  submittedAt: string;
+}

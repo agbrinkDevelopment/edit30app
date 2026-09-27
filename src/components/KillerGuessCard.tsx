@@ -3,91 +3,68 @@ import { styles as sharedStyles } from "../shared/styles";
 import { useGame } from "../context/GameContext";
 import {
   AlertTriangle,
-  Check,
   ChevronDown,
   HelpCircleIcon,
   User,
 } from "lucide-react";
-import { isCharacterInvestigated, loadProgress } from "../shared/helpers";
-import { PROGRESS_KEY } from "../shared/data";
+import { formatElapsed } from "../shared/helpers";
+import { usePlayerSections } from "../context/PlayerSectionsContext";
 import { theme } from "../theme";
-import { useGameTimer } from "../context/GameTimerContext";
+import SectionCheckCircle from "./SectionCheckCircle";
 import { fileSrc } from "../api/client";
 
+// The checklist of sections plus the final killer guess. A section counts as
+// complete when it's done or skipped. The first "Utvärdera" is final: it
+// stops the timer and saves the guess, time and per-section outcome.
 export default function KillerGuessCard({
-  tidslinjeSolved,
-  ledtradarSolved,
+  steps,
 }: {
-  tidslinjeSolved: boolean;
-  ledtradarSolved: boolean;
+  steps: { id: string; label: string; done: boolean }[];
 }) {
-  const [guessResult, setGuessResult] = useState<"correct" | "wrong" | null>(
-    null,
-  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { game } = useGame();
-  const { stopTimer } = useGameTimer();
+  const { sections, result, submitGuess } = usePlayerSections();
 
-  const [progress] = useState<Record<string, boolean>>(
-    loadProgress(PROGRESS_KEY),
-  );
-
-  const victim = game.characters.find((c) => c.role === "victim");
-  const detective = game.characters.find((c) => c.role === "detective");
   const suspects = game.characters.filter((c) => c.role === "suspect");
-  const witnesses = game.characters.filter((c) => c.role === "witness");
 
-  const mysterySteps = [
-    { id: "kartan", label: "Kartan", done: !!progress["kartan"] },
-    { id: "tidslinje", label: "Tidslinjen", done: tidslinjeSolved },
-    { id: "ledtradar", label: "Ledtrådar", done: ledtradarSolved },
-    {
-      id: "detektiven",
-      label: "Detektiven",
-      done: !detective || isCharacterInvestigated(detective.id, progress),
-    },
-    {
-      id: "offret",
-      label: "Offret",
-      done: !victim || isCharacterInvestigated(victim.id, progress),
-    },
-    {
-      id: "de-misstankta",
-      label: "De misstänkta",
-      done:
-        suspects.length === 0 ||
-        suspects.every((c) => isCharacterInvestigated(c.id, progress)),
-    },
-    {
-      id: "vittnen",
-      label: "Vittnen",
-      done:
-        witnesses.length === 0 ||
-        witnesses.every((c) => isCharacterInvestigated(c.id, progress)),
-    },
-  ];
+  const mysterySteps = steps.map((step) => ({
+    ...step,
+    skipped: !!sections[step.id]?.skipped,
+  }));
 
-  const [guessId, setGuessId] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  // Once submitted, the saved guess is what's shown (also after a reload).
+  const guessId = result?.guessedCharacterId ?? selectedId;
+  const guessResult = result ? (result.correct ? "correct" : "wrong") : null;
 
   const killer = game.characters.find((c) => c.isKiller);
-  const allStepsDone = mysterySteps.every((s) => s.done);
+  const remainingSteps = mysterySteps.filter((s) => !s.done && !s.skipped);
+  const allStepsDone = remainingSteps.length === 0;
+  const canGuess = allStepsDone && !result && !submitting;
   const guessedChar = suspects.find((c) => c.id === guessId);
 
-  const submitGuess = () => {
-    stopTimer();
-    const guessed = game.characters.find((c) => c.id === guessId);
-    if (!guessed) return;
-    const correct = guessed.isKiller;
-    setGuessResult(correct ? "correct" : "wrong");
-    if (correct) {
-      window.confetti?.({
-        particleCount: 240,
-        spread: 120,
-        startVelocity: 100,
-        origin: { y: 0.4 },
-        disableForReducedMotion: true,
-      });
-    }
+  const evaluate = () => {
+    if (!guessId || !canGuess) return;
+    setSubmitting(true);
+    submitGuess(guessId)
+      .then((saved) => {
+        if (saved.correct) {
+          window.confetti?.({
+            particleCount: 240,
+            spread: 120,
+            startVelocity: 100,
+            origin: { y: 0.4 },
+            disableForReducedMotion: true,
+          });
+        }
+      })
+      .catch((err) =>
+        window.alert(
+          `Kunde inte spara din gissning: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      )
+      .finally(() => setSubmitting(false));
   };
 
   return (
@@ -129,14 +106,13 @@ export default function KillerGuessCard({
         <div style={sharedStyles.checklist}>
           {mysterySteps.map((step) => (
             <div key={step.id} style={sharedStyles.checklistItem}>
-              <span
-                style={{
-                  ...sharedStyles.checkCircle,
-                  ...(step.done ? sharedStyles.checkCircleDone : {}),
-                }}
-              >
-                {step.done && <Check size={12} color={theme.primaryText} />}
-              </span>
+              <SectionCheckCircle
+                sectionId={step.id}
+                done={step.done}
+                baseStyle={sharedStyles.checkCircle}
+                doneStyle={sharedStyles.checkCircleDone}
+                iconSize={12}
+              />
               {step.label}
             </div>
           ))}
@@ -145,18 +121,18 @@ export default function KillerGuessCard({
           <div
             style={{
               ...sharedStyles.guessDropdownWrap,
-              opacity: allStepsDone ? 1 : 0.5,
+              opacity: canGuess ? 1 : 0.5,
             }}
-            tabIndex={allStepsDone ? 0 : -1}
+            tabIndex={canGuess ? 0 : -1}
             onBlur={() => setDropdownOpen(false)}
           >
             <button
               type="button"
               style={{
                 ...sharedStyles.guessDropdownTrigger,
-                cursor: allStepsDone ? "pointer" : "not-allowed",
+                cursor: canGuess ? "pointer" : "not-allowed",
               }}
-              disabled={!allStepsDone}
+              disabled={!canGuess}
               onClick={() => setDropdownOpen((o) => !o)}
             >
               <span style={sharedStyles.guessDropdownAvatar}>
@@ -186,8 +162,7 @@ export default function KillerGuessCard({
                     style={sharedStyles.guessDropdownOption}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      setGuessId(c.id);
-                      setGuessResult(null);
+                      setSelectedId(c.id);
                       setDropdownOpen(false);
                     }}
                   >
@@ -211,28 +186,36 @@ export default function KillerGuessCard({
           <button
             style={{
               ...sharedStyles.guessBtn,
-              opacity: allStepsDone && guessId ? 1 : 0.5,
-              cursor: allStepsDone && guessId ? "pointer" : "not-allowed",
+              opacity: canGuess && guessId ? 1 : 0.5,
+              cursor: canGuess && guessId ? "pointer" : "not-allowed",
             }}
-            disabled={!allStepsDone || !guessId}
-            onClick={submitGuess}
+            disabled={!canGuess || !guessId}
+            onClick={evaluate}
           >
             Utvärdera
           </button>
-          {guessResult && (
-            <p
-              style={{
-                ...sharedStyles.guessResult,
-                color:
-                  guessResult === "correct" ? theme.success : theme.primary,
-              }}
-            >
-              {guessResult === "correct"
-                ? "Rätt gissat! Du har löst mysteriet."
-                : "Fel gissning – tänk om och försök igen."}
-            </p>
-          )}
         </div>
+        {result && (
+          <p
+            style={{
+              ...sharedStyles.guessResult,
+              color: result.correct ? theme.success : theme.primary,
+            }}
+          >
+            {result.correct
+              ? "Rätt gissat! Du har löst mysteriet."
+              : "Fel gissning – mysteriet förblev olöst."}{" "}
+            Din tid: {formatElapsed(result.totalSeconds)}
+            {result.penaltySeconds > 0 &&
+              ` (varav ${formatElapsed(result.penaltySeconds)} tillägg)`}
+          </p>
+        )}
+        {!result && !allStepsDone && (
+          <p style={{ ...sharedStyles.guessResult, color: theme.textMuted }}>
+            Slutför eller hoppa över:{" "}
+            {remainingSteps.map((s) => s.label).join(", ")}
+          </p>
+        )}
       </div>
     </div>
   );

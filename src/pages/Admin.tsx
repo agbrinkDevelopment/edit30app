@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useGame } from "../context/GameContext";
-import { Character, Clue, TimelineEvent, GameDocument } from "../types";
+import {
+  Character,
+  Clue,
+  GameDocument,
+  SectionHint,
+  TimelineEvent,
+} from "../types";
+import { MYSTERY_SECTIONS } from "../shared/data";
 import {
   Plus,
   Trash2,
@@ -58,6 +65,10 @@ export default function Admin() {
 
       <Section id="admin-ledtradar" title="Ledtrådar">
         <ClueAdmin />
+      </Section>
+
+      <Section id="admin-tips" title="Tips per sektion">
+        <SectionHintAdmin />
       </Section>
 
       <Section id="admin-dokument" title="Förhörsdokument">
@@ -671,6 +682,108 @@ function ClueAdmin() {
         </div>
       )}
     </>
+  );
+}
+
+// The hint players can reveal when stuck on a section, and how many minutes
+// revealing it / skipping the section adds to their time. Leaving the hint
+// empty means players go straight to the skip option.
+function SectionHintAdmin() {
+  const [hints, setHints] = useState<Record<string, SectionHint>>({});
+  const [saved, setSaved] = useState<Record<string, SectionHint>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .getSectionHints()
+      .then((list) => {
+        const byId = Object.fromEntries(list.map((h) => [h.sectionId, h]));
+        setHints(byId);
+        setSaved(byId);
+      })
+      .catch((err) => setError(String(err)));
+  }, []);
+
+  const change = (sectionId: string, patch: Partial<SectionHint>) =>
+    setHints((prev) => ({
+      ...prev,
+      [sectionId]: { ...prev[sectionId], ...patch },
+    }));
+
+  const save = (sectionId: string) => {
+    const { hint, hintPenaltySeconds, skipPenaltySeconds } = hints[sectionId];
+    api
+      .updateSectionHint(sectionId, {
+        hint,
+        hintPenaltySeconds,
+        skipPenaltySeconds,
+      })
+      .then((updated) => {
+        setHints((prev) => ({ ...prev, [sectionId]: updated }));
+        setSaved((prev) => ({ ...prev, [sectionId]: updated }));
+      })
+      .catch((err) => setError(String(err)));
+  };
+
+  const minutesInput = (
+    sectionId: string,
+    field: "hintPenaltySeconds" | "skipPenaltySeconds",
+  ) => (
+    <input
+      type="number"
+      min={0}
+      style={sharedStyles.input}
+      value={Math.round(hints[sectionId][field] / 60)}
+      onChange={(e) =>
+        change(sectionId, {
+          [field]: Math.max(0, Math.round(Number(e.target.value) || 0)) * 60,
+        })
+      }
+    />
+  );
+
+  if (error) return <div style={sharedStyles.empty}>{error}</div>;
+
+  return (
+    <div style={sharedStyles.list}>
+      {MYSTERY_SECTIONS.filter((s) => hints[s.id]).map((s) => {
+        const h = hints[s.id];
+        const dirty = JSON.stringify(h) !== JSON.stringify(saved[s.id]);
+        return (
+          <div key={s.id} style={sharedStyles.card}>
+            <div style={sharedStyles.cardTop}>
+              <span style={sharedStyles.name}>{s.label}</span>
+            </div>
+            <div style={sharedStyles.formGrid}>
+              <Field label="Ledtråd" full>
+                <textarea
+                  style={sharedStyles.textarea}
+                  value={h.hint}
+                  onChange={(e) => change(s.id, { hint: e.target.value })}
+                  placeholder="Tom = spelarna kan bara hoppa över"
+                  rows={2}
+                />
+              </Field>
+              <Field label="Tillägg för ledtråd (min)">
+                {minutesInput(s.id, "hintPenaltySeconds")}
+              </Field>
+              <Field label="Tillägg för att hoppa över (min)">
+                {minutesInput(s.id, "skipPenaltySeconds")}
+              </Field>
+            </div>
+            <div style={sharedStyles.formActions}>
+              <button
+                style={{ ...sharedStyles.btn, opacity: dirty ? 1 : 0.5 }}
+                disabled={!dirty}
+                onClick={() => save(s.id)}
+              >
+                <Check size={15} /> {dirty ? "Spara" : "Sparat"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

@@ -256,9 +256,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "0 10px 10px 10px",
     boxShadow: [
       `-2px -2px 0 0 ${theme.cardBg}`,
-      `-2px -2px 0 1px ${theme.cardBorder}`,
+      `-2px -2px 0 1px ${theme.textFaint}`,
       `-5px -5px 0 0 ${theme.cardBg}`,
-      `-5px -5px 0 1px ${theme.cardBorder}`,
+      `-5px -5px 0 1px ${theme.textFaint}`,
     ].join(", "),
   },
   folderTab: {
@@ -328,16 +328,15 @@ const styles: Record<string, React.CSSProperties> = {
   // A little hardcover book: a ridged spine on the left, pages implied by a
   // stacked drop-shadow on the bottom-right, like folderWrap/newsStack.
   bookWrap: {
-    marginTop: 20,
     display: "flex",
     borderRadius: "3px 10px 10px 3px",
     overflow: "hidden",
     border: `1px solid ${theme.textFaint}`,
     boxShadow: [
       `3px 3px 0 0 ${theme.cardBg}`,
-      `3px 3px 0 1px ${theme.cardBorder}`,
+      `3px 3px 0 1px ${theme.textFaint}`,
       `6px 6px 0 0 ${theme.cardBg}`,
-      `6px 6px 0 1px ${theme.cardBorder}`,
+      `6px 6px 0 1px ${theme.textFaint}`,
     ].join(", "),
   },
   bookSpine: {

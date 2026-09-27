@@ -26,6 +26,18 @@ export const NAV_ITEMS = [
 
 export const PROGRESS_KEY = "mystery-progress";
 
+// The sections a player has to complete (or skip) before guessing the
+// killer, in checklist order. Ids match the backend's section_hints rows.
+export const MYSTERY_SECTIONS = [
+  { id: "kartan", label: "Kartan" },
+  { id: "tidslinje", label: "Tidslinjen" },
+  { id: "ledtradar", label: "Ledtrådar" },
+  { id: "detektiven", label: "Detektiven" },
+  { id: "offret", label: "Offret" },
+  { id: "de-misstankta", label: "De misstänkta" },
+  { id: "vittnen", label: "Vittnen" },
+];
+
 export const POOL_ID = "pool";
 
 export const INVESTIGATION_SECTIONS = ["kartan", "tidslinje", "evidence"];

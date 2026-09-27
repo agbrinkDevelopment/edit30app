@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Clock, Edit2, Plus, Trash2, Check, User } from "lucide-react";
+import { Clock, Edit2, Plus, Trash2, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import { PlayerTimelineEvent } from "../types";
 import { theme } from "../theme";
+import SectionCheckCircle from "./SectionCheckCircle";
 import { sharedStyles } from "../shared/styles";
 import Modal from "./Modal";
 import TimelineEventFormModal, {
@@ -190,14 +191,13 @@ export default function CaseTimeline({
               : "Din tidslinje stämmer inte än"
           }
         >
-          <span
-            style={{
-              ...sharedStyles.pillCheckCircle,
-              ...(solved ? sharedStyles.pillCheckCircleDone : {}),
-            }}
-          >
-            {solved && <Check size={12} color={theme.primaryText} />}
-          </span>
+          <SectionCheckCircle
+            sectionId="tidslinje"
+            done={solved}
+            baseStyle={sharedStyles.pillCheckCircle}
+            doneStyle={sharedStyles.pillCheckCircleDone}
+            iconSize={12}
+          />
         </div>
         <div style={styles.headerSpacer} />
         <button style={styles.addEventBtn} onClick={startCreate}>

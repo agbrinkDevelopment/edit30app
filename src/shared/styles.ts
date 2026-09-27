@@ -213,8 +213,8 @@ export const styles: Record<string, React.CSSProperties> = {
   },
   guessResult: {
     margin: 0,
-    fontSize: 14,
-    fontWeight: 600,
+    fontSize: 12,
+    fontWeight: 400,
   },
   sectionTitle: {
     fontFamily: theme.fontSerif,
@@ -229,10 +229,14 @@ export const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
     columnGap: 14,
   },
-  ledtradarTabCircle: {
+  // Holds the Ledtrådar card's status circles in its top-right corner.
+  ledtradarTabCircles: {
     position: "absolute",
     top: 12,
     right: 12,
+    zIndex: 2,
+  },
+  ledtradarTabCircle: {
     width: 26,
     height: 26,
     borderRadius: "50%",

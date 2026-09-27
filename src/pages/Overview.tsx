@@ -7,8 +7,9 @@ import { usePlayerClue } from "../hooks/usePlayerClue";
 import CaseTimeline from "../components/CaseTimeline";
 import PlayerEvidenceCard from "../components/PlayerEvidenceCard";
 import CityMap from "../components/CityMap";
-import { loadProgress } from "../shared/helpers";
-import { PROGRESS_KEY } from "../shared/data";
+import { isCharacterInvestigated, loadProgress } from "../shared/helpers";
+import { MYSTERY_SECTIONS, PROGRESS_KEY } from "../shared/data";
+import SectionHelp from "../components/SectionHelp";
 import SpotlightCard from "../components/SpotlightCard";
 import Section from "../components/Section";
 import KillerGuessCard from "../components/KillerGuessCard";
@@ -45,6 +46,21 @@ export default function Overview() {
     });
   };
 
+  // Whether each checklist section is finished on its own merits (a skip is
+  // tracked separately, see SectionHelp / KillerGuessCard). A section with
+  // no characters to look at counts as done.
+  const sectionDone: Record<string, boolean> = {
+    kartan: !!progress["kartan"],
+    tidslinje: playerTimeline.solved,
+    ledtradar: playerClue.solved,
+    detektiven: !detective || isCharacterInvestigated(detective.id, progress),
+    offret: !victim || isCharacterInvestigated(victim.id, progress),
+    "de-misstankta": suspects.every((c) =>
+      isCharacterInvestigated(c.id, progress),
+    ),
+    vittnen: witnesses.every((c) => isCharacterInvestigated(c.id, progress)),
+  };
+
   return (
     <div
       style={{
@@ -57,8 +73,10 @@ export default function Overview() {
     >
       <Section id="mordaren" title="Mördaren" style={{ marginTop: 0 }}>
         <KillerGuessCard
-          tidslinjeSolved={playerTimeline.solved}
-          ledtradarSolved={playerClue.solved}
+          steps={MYSTERY_SECTIONS.map((s) => ({
+            ...s,
+            done: sectionDone[s.id],
+          }))}
         />
       </Section>
 
@@ -67,6 +85,7 @@ export default function Overview() {
           done={!!progress["kartan"]}
           onToggleDone={() => toggleStep("kartan")}
         />
+        <SectionHelp sectionId="kartan" done={sectionDone.kartan} />
       </Section>
 
       <Section id="tidslinje" title="Tidslinje">
@@ -77,6 +96,7 @@ export default function Overview() {
           onUpdateEvent={playerTimeline.updateEvent}
           onRemoveEvent={playerTimeline.removeEvent}
         />
+        <SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />
       </Section>
 
       <Section id="ledtradar" title="Ledtrådar">
@@ -86,16 +106,19 @@ export default function Overview() {
           solvedCharacterIds={playerClue.solvedCharacterIds}
           onAssign={playerClue.assign}
         />
+        <SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />
       </Section>
 
       {detective && (
         <Section id="detektiven" title="Detektiven">
           <SpotlightCard
             character={detective}
+            sectionId="detektiven"
             game={game}
             progress={progress}
             onToggleDone={toggleStep}
           />
+          <SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />
         </Section>
       )}
 
@@ -103,10 +126,12 @@ export default function Overview() {
         <Section id="offret" title="Offret">
           <SpotlightCard
             character={victim}
+            sectionId="offret"
             game={game}
             progress={progress}
             onToggleDone={toggleStep}
           />
+          <SectionHelp sectionId="offret" done={sectionDone.offret} />
         </Section>
       )}
 
@@ -114,9 +139,14 @@ export default function Overview() {
         <Section id="de-misstankta" title="De misstänkta">
           <CharacterGrid
             characters={suspects}
+            sectionId="de-misstankta"
             game={game}
             progress={progress}
             onToggleDone={toggleStep}
+          />
+          <SectionHelp
+            sectionId="de-misstankta"
+            done={sectionDone["de-misstankta"]}
           />
         </Section>
       )}
@@ -125,10 +155,12 @@ export default function Overview() {
         <Section id="vittnen" title="Vittnen">
           <CharacterGrid
             characters={witnesses}
+            sectionId="vittnen"
             game={game}
             progress={progress}
             onToggleDone={toggleStep}
           />
+          <SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />
         </Section>
       )}
     </div>

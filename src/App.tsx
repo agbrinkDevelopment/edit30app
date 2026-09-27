@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { GameProvider, useGame } from "./context/GameContext";
 import { GameTimerProvider, resetGameTimer } from "./context/GameTimerContext";
+import { PlayerSectionsProvider } from "./context/PlayerSectionsContext";
 import { AuthProvider, Session, Role, useAuth } from "./context/AuthContext";
 import { theme } from "./theme";
 import Navbar from "./components/Navbar";
@@ -64,7 +65,9 @@ export default function App() {
     <AuthProvider session={session} signOut={handleSignOut}>
       <GameProvider>
         <GameTimerProvider>
-          <AppShell />
+          <PlayerSectionsProvider>
+            <AppShell />
+          </PlayerSectionsProvider>
         </GameTimerProvider>
       </GameProvider>
     </AuthProvider>

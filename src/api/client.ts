@@ -2,11 +2,14 @@ import {
   Character,
   Clue,
   EvidenceType,
+  GameResult,
   GameDocument,
   Player,
   PlayerClue,
   PlayerEvidence,
+  PlayerSection,
   PlayerTimelineEvent,
+  SectionHint,
   TimelineEvent,
 } from "../types";
 
@@ -178,4 +181,28 @@ export const api = {
     get<{ solved: boolean; solvedCharacterIds: string[] }>(
       `/players/${playerId}/clue-status`,
     ),
+
+  getSectionHints: () => get<SectionHint[]>("/section-hints"),
+  updateSectionHint: (
+    sectionId: string,
+    h: Partial<Omit<SectionHint, "sectionId">>,
+  ) => put<SectionHint>(`/section-hints/${sectionId}`, h),
+
+  getPlayerSections: (playerId: string) =>
+    get<PlayerSection[]>(`/players/${playerId}/sections`),
+  revealSectionHint: (playerId: string, sectionId: string) =>
+    post<PlayerSection>(`/players/${playerId}/sections/${sectionId}/hint`, {}),
+  skipSection: (playerId: string, sectionId: string) =>
+    post<PlayerSection>(`/players/${playerId}/sections/${sectionId}/skip`, {}),
+
+  // 404 (no result yet) comes back as null rather than an error.
+  getGameResult: (playerId: string) =>
+    get<GameResult>(`/players/${playerId}/result`).catch((err: Error) => {
+      if (err.message.includes(" 404 ")) return null;
+      throw err;
+    }),
+  submitGameResult: (
+    playerId: string,
+    body: { guessedCharacterId: string; elapsedSeconds: number },
+  ) => post<GameResult>(`/players/${playerId}/result`, body),
 };
