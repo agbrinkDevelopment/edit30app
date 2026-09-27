@@ -44,7 +44,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 52,
     height: 52,
     borderTopLeftRadius: "50%",
-    background: theme.textFaint,
+    background: theme.primary,
     border: "none",
     display: "flex",
     alignItems: "center",
