@@ -8,20 +8,18 @@ import {
   HelpCircleIcon,
   User,
 } from "lucide-react";
-import {
-  isBucketSolved,
-  isCharacterInvestigated,
-  loadProgress,
-  loadSort,
-} from "../shared/helpers";
+import { isCharacterInvestigated, loadProgress } from "../shared/helpers";
 import { PROGRESS_KEY } from "../shared/data";
 import { theme } from "../theme";
 import { useGameTimer } from "../context/GameTimerContext";
+import { fileSrc } from "../api/client";
 
 export default function KillerGuessCard({
   tidslinjeSolved,
+  ledtradarSolved,
 }: {
   tidslinjeSolved: boolean;
+  ledtradarSolved: boolean;
 }) {
   const [guessResult, setGuessResult] = useState<"correct" | "wrong" | null>(
     null,
@@ -33,21 +31,16 @@ export default function KillerGuessCard({
   const [progress] = useState<Record<string, boolean>>(
     loadProgress(PROGRESS_KEY),
   );
-  const [itemBucket] = useState<Record<string, string>>(loadSort);
 
   const victim = game.characters.find((c) => c.role === "victim");
   const detective = game.characters.find((c) => c.role === "detective");
   const suspects = game.characters.filter((c) => c.role === "suspect");
   const witnesses = game.characters.filter((c) => c.role === "witness");
-  const clueBucketCharacters = detective ? [...suspects, detective] : suspects;
-  const allBucketsChecked =
-    clueBucketCharacters.length > 0 &&
-    clueBucketCharacters.every((c) => isBucketSolved(c.id, itemBucket));
 
   const mysterySteps = [
     { id: "kartan", label: "Kartan", done: !!progress["kartan"] },
     { id: "tidslinje", label: "Tidslinjen", done: tidslinjeSolved },
-    { id: "ledtradar", label: "Ledtrådar", done: allBucketsChecked },
+    { id: "ledtradar", label: "Ledtrådar", done: ledtradarSolved },
     {
       id: "detektiven",
       label: "Detektiven",
@@ -108,7 +101,7 @@ export default function KillerGuessCard({
         {guessResult === "correct" ? (
           killer?.imageUrl ? (
             <img
-              src={killer.imageUrl}
+              src={fileSrc(killer.imageUrl)}
               alt={killer.name}
               style={sharedStyles.killerPhotoImg}
             />
@@ -120,7 +113,7 @@ export default function KillerGuessCard({
         ) : guessedChar ? (
           guessedChar.imageUrl ? (
             <img
-              src={guessedChar.imageUrl}
+              src={fileSrc(guessedChar.imageUrl)}
               alt={guessedChar.name}
               style={sharedStyles.killerPhotoImg}
             />
@@ -169,7 +162,7 @@ export default function KillerGuessCard({
               <span style={sharedStyles.guessDropdownAvatar}>
                 {guessedChar?.imageUrl ? (
                   <img
-                    src={guessedChar.imageUrl}
+                    src={fileSrc(guessedChar.imageUrl)}
                     alt={guessedChar.name}
                     style={sharedStyles.guessDropdownAvatarImg}
                   />
@@ -201,7 +194,7 @@ export default function KillerGuessCard({
                     <span style={sharedStyles.guessDropdownAvatar}>
                       {c.imageUrl ? (
                         <img
-                          src={c.imageUrl}
+                          src={fileSrc(c.imageUrl)}
                           alt={c.name}
                           style={sharedStyles.guessDropdownAvatarImg}
                         />

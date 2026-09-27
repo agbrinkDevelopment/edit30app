@@ -28,6 +28,7 @@ export interface Clue {
   revealedBy: string;
   relatedCharacterIds: string[];
   isMacguffin: boolean;
+  imageUrl?: string | null;
 }
 
 export interface Scene {
@@ -80,13 +81,11 @@ export interface PlayerEvidence {
   relatedCharacterIds: string[];
 }
 
+// A player's guess of which character a clue (item) belongs to. null while
+// the item sits unassigned in the pool.
 export interface PlayerClue {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  relatedCharacterIds: string[];
-  isMacguffin: boolean;
+  clueId: string;
+  characterId: string | null;
 }
 
 export interface GameState {

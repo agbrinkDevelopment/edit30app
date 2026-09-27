@@ -8,23 +8,14 @@ import Modal from "./Modal";
 import TimelineEventFormModal, {
   emptyTimelineEventDraft,
 } from "./TimelineEventFormModal";
+import { formatMinutes, toMinutes } from "../shared/helpers";
+import { fileSrc } from "../api/client";
 
 const LANE_HEIGHT = 56;
 const PX_PER_MIN = 5;
 const PAD_X = 30;
 const AXIS_HEIGHT = 32;
 const TICK_INTERVAL_MIN = 30;
-
-function toMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-
-function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60) % 24;
-  const m = minutes % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
 
 function computeLaneOrder(
   characterIds: string[],
@@ -56,9 +47,6 @@ function computeLaneOrder(
   return order;
 }
 
-// The timeline a player has personally reconstructed. Never fed the real
-// timeline_events — only this player's own events, plus whether they match
-// (computed server-side; see usePlayerTimeline / playerService).
 export default function CaseTimeline({
   events,
   solved,
@@ -73,10 +61,10 @@ export default function CaseTimeline({
   onRemoveEvent: (id: string) => void;
 }) {
   const { game } = useGame();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [creating, setCreating] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState(emptyTimelineEventDraft());
 
   const startCreate = () => {
@@ -257,7 +245,7 @@ export default function CaseTimeline({
                     <div style={styles.laneAvatar} title={c?.name}>
                       {c?.imageUrl ? (
                         <img
-                          src={c.imageUrl}
+                          src={fileSrc(c.imageUrl)}
                           alt={c.name}
                           style={sharedStyles.imgCover}
                         />
@@ -373,7 +361,6 @@ export default function CaseTimeline({
                   const x = eventX.get(e.id)!;
                   const y = eventY(e);
                   const isMerge = e.characterIds.length > 1;
-                  const isSelected = e.id !== null;
                   return (
                     <g
                       key={e.id}
@@ -388,7 +375,7 @@ export default function CaseTimeline({
                         r={isMerge ? 10 : 7}
                         fill={isMerge ? theme.accent : theme.cardBg}
                         stroke={theme.accent}
-                        strokeWidth={isSelected ? 4 : 2.5}
+                        strokeWidth={2.5}
                       />
                     </g>
                   );
@@ -546,6 +533,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
+    paddingRight: 32,
   },
   detailTime: {
     display: "flex",

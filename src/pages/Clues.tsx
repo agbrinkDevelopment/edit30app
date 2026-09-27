@@ -7,7 +7,7 @@ import { theme } from '../theme';
 import { sharedStyles } from '../shared/styles';
 
 const emptyClue = (): Omit<Clue, 'id'> => ({
-  title: '', description: '', location: '', revealedBy: '', relatedCharacterIds: [], isMacguffin: false,
+  title: '', description: '', location: '', revealedBy: '', relatedCharacterIds: [], isMacguffin: false, imageUrl: null,
 });
 
 export default function Clues() {
@@ -59,6 +59,9 @@ export default function Clues() {
             </Field>
             <Field label="Description" full>
               <textarea style={sharedStyles.textarea} value={draft.description} onChange={e => setField('description', e.target.value)} placeholder="What is this clue and what does it reveal?" rows={3} />
+            </Field>
+            <Field label="Image URL" full>
+              <input style={sharedStyles.input} value={draft.imageUrl ?? ''} onChange={e => setField('imageUrl', e.target.value || null)} placeholder="e.g. /evidence/evidence_knife.png" />
             </Field>
             <Field label="How It's Revealed" full>
               <input style={sharedStyles.input} value={draft.revealedBy} onChange={e => setField('revealedBy', e.target.value)} placeholder="e.g. found in the library, given by the butler..." />

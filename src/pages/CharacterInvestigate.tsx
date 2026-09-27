@@ -4,6 +4,7 @@ import { useGame } from "../context/GameContext";
 import { ArrowLeft, User, Check } from "lucide-react";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
+import { fileSrc } from "../api/client";
 
 const NOTES_KEY = "character-notes";
 
@@ -63,7 +64,7 @@ export default function CharacterInvestigate() {
         <div style={sharedStyles.detailPhoto}>
           {character.imageUrl ? (
             <img
-              src={character.imageUrl}
+              src={fileSrc(character.imageUrl)}
               alt={character.name}
               style={sharedStyles.imgCover}
             />

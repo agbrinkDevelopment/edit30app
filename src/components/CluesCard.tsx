@@ -3,34 +3,33 @@ import { Check, Image as ImageIcon, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import { theme } from "../theme";
 import { styles as sharedStyles } from "../shared/styles";
-import { isBucketSolved, loadSort } from "../shared/helpers";
-import { SORT_ITEMS, POOL_ID, SORT_KEY } from "../shared/data";
+import { POOL_ID } from "../shared/data";
+import { fileSrc } from "../api/client";
 
-export default function CluesCard() {
+// Players drag each clue (item) onto the character they think it belongs to.
+// The mapping lives in player_clues and is checked against the real owners
+// server-side — see usePlayerClue.
+export default function CluesCard({
+  assignments,
+  solved,
+  solvedCharacterIds,
+  onAssign,
+}: {
+  assignments: Record<string, string | null>;
+  solved: boolean;
+  solvedCharacterIds: string[];
+  onAssign: (clueId: string, characterId: string | null) => void;
+}) {
   const { game } = useGame();
   const detective = game.characters.find((c) => c.role === "detective");
   const suspects = game.characters.filter((c) => c.role === "suspect");
-  const clueBucketCharacters = detective ? [...suspects, detective] : suspects;
 
-  const [itemBucket, setItemBucket] =
-    useState<Record<string, string>>(loadSort);
   const [dragOverBucket, setDragOverBucket] = useState<string | null>(null);
 
-  const allBucketsChecked =
-    clueBucketCharacters.length > 0 &&
-    clueBucketCharacters.every((c) => isBucketSolved(c.id, itemBucket));
-
-  const assignItem = (itemId: string, bucketId: string) => {
-    setItemBucket((prev) => {
-      const next = { ...prev, [itemId]: bucketId };
-      try {
-        localStorage.setItem(SORT_KEY, JSON.stringify(next));
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
-  };
+  const itemsIn = (characterId: string) =>
+    game.clues.filter((item) => assignments[item.id] === characterId);
+  const isBucketSolved = (characterId: string) =>
+    solvedCharacterIds.includes(characterId);
 
   const handleItemDragStart = (
     e: React.DragEvent<HTMLDivElement>,
@@ -53,7 +52,7 @@ export default function CluesCard() {
   ) => {
     e.preventDefault();
     const itemId = e.dataTransfer.getData("text/plain");
-    if (itemId) assignItem(itemId, bucketId);
+    if (itemId) onAssign(itemId, bucketId === POOL_ID ? null : bucketId);
     setDragOverBucket(null);
   };
 
@@ -62,10 +61,8 @@ export default function CluesCard() {
       <div style={sharedStyles.sortGrid}>
         {detective &&
           (() => {
-            const detectiveItems = SORT_ITEMS.filter(
-              (item) => itemBucket[item.id] === detective.id,
-            );
-            const detectiveSolved = isBucketSolved(detective.id, itemBucket);
+            const detectiveItems = itemsIn(detective.id);
+            const detectiveSolved = isBucketSolved(detective.id);
             return (
               <div style={sharedStyles.sortGrid}>
                 <div
@@ -84,7 +81,7 @@ export default function CluesCard() {
                       <div style={sharedStyles.sortBucketAvatar}>
                         {detective.imageUrl ? (
                           <img
-                            src={detective.imageUrl}
+                            src={fileSrc(detective.imageUrl)}
                             alt={detective.name}
                             style={sharedStyles.sortBucketAvatarImg}
                           />
@@ -123,7 +120,7 @@ export default function CluesCard() {
                         <div style={sharedStyles.sortItemImage}>
                           {item.imageUrl ? (
                             <img
-                              src={item.imageUrl}
+                              src={fileSrc(item.imageUrl)}
                               alt={item.title}
                               style={sharedStyles.sortItemImageImg}
                             />
@@ -142,24 +139,22 @@ export default function CluesCard() {
       </div>
       <span
         title={
-          allBucketsChecked
-            ? "Alla misstänkta är klara"
-            : "Inte alla misstänkta är klara än"
+          solved
+            ? "Alla ledtrådar är rätt tilldelade"
+            : "Inte alla ledtrådar är rätt tilldelade än"
         }
         style={{
           ...sharedStyles.ledtradarTabCircle,
-          ...(allBucketsChecked ? sharedStyles.subCheckCircleDone : {}),
+          ...(solved ? sharedStyles.subCheckCircleDone : {}),
         }}
       >
-        {allBucketsChecked && <Check size={11} color={theme.primaryText} />}
+        {solved && <Check size={11} color={theme.primaryText} />}
       </span>
 
       <div style={sharedStyles.sortGrid}>
         {suspects.map((c) => {
-          const items = SORT_ITEMS.filter(
-            (item) => itemBucket[item.id] === c.id,
-          );
-          const solved = isBucketSolved(c.id, itemBucket);
+          const items = itemsIn(c.id);
+          const bucketSolved = isBucketSolved(c.id);
           return (
             <div
               key={c.id}
@@ -176,7 +171,7 @@ export default function CluesCard() {
                   <div style={sharedStyles.sortBucketAvatar}>
                     {c.imageUrl ? (
                       <img
-                        src={c.imageUrl}
+                        src={fileSrc(c.imageUrl)}
                         alt={c.name}
                         style={sharedStyles.sortBucketAvatarImg}
                       />
@@ -189,15 +184,17 @@ export default function CluesCard() {
                 <span
                   style={{
                     ...sharedStyles.subCheckCircle,
-                    ...(solved ? sharedStyles.subCheckCircleDone : {}),
+                    ...(bucketSolved ? sharedStyles.subCheckCircleDone : {}),
                   }}
                   title={
-                    solved
+                    bucketSolved
                       ? "Rätt ledtrådar tilldelade"
                       : "Inte rätt ledtrådar tilldelade än"
                   }
                 >
-                  {solved && <Check size={10} color={theme.primaryText} />}
+                  {bucketSolved && (
+                    <Check size={10} color={theme.primaryText} />
+                  )}
                 </span>
               </div>
               <div style={sharedStyles.sortItemList}>
@@ -211,7 +208,7 @@ export default function CluesCard() {
                     <div style={sharedStyles.sortItemImage}>
                       {item.imageUrl ? (
                         <img
-                          src={item.imageUrl}
+                          src={fileSrc(item.imageUrl)}
                           alt={item.title}
                           style={sharedStyles.sortItemImageImg}
                         />
@@ -240,9 +237,9 @@ export default function CluesCard() {
             <span style={sharedStyles.sortBucketName}>Ledtrådar</span>
           </div>
           <div style={sharedStyles.sortItemListRow}>
-            {SORT_ITEMS.filter(
-              (item) => !itemBucket[item.id] || itemBucket[item.id] === POOL_ID,
-            ).map((item) => (
+            {game.clues
+              .filter((item) => !assignments[item.id])
+              .map((item) => (
               <div
                 key={item.id}
                 draggable
@@ -252,7 +249,7 @@ export default function CluesCard() {
                 <div style={sharedStyles.sortItemImage}>
                   {item.imageUrl ? (
                     <img
-                      src={item.imageUrl}
+                      src={fileSrc(item.imageUrl)}
                       alt={item.title}
                       style={sharedStyles.sortItemImageImg}
                     />

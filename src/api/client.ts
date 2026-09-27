@@ -40,6 +40,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Uploaded files are stored as "/api/uploads/<name>" rather than a full URL,
+// so the same row works whichever backend serves it (localhost or deployed).
+// Resolves that against the API's own origin; any other URL (public assets
+// like "/characters/…", old data: URLs) is returned unchanged.
+export function fileSrc(url: string): string;
+export function fileSrc(
+  url: string | null | undefined,
+): string | undefined;
+export function fileSrc(url: string | null | undefined) {
+  if (!url) return undefined;
+  return url.startsWith("/api/")
+    ? API_BASE_URL.replace(/\/api\/?$/, "") + url
+    : url;
+}
+
 const get = <T>(path: string) => request<T>(path);
 const post = <T>(path: string, body: unknown) =>
   request<T>(path, { method: "POST", body: JSON.stringify(body) });
@@ -50,6 +65,15 @@ const patch = <T>(path: string, body: unknown) =>
 const del = (path: string) => request<void>(path, { method: "DELETE" });
 
 export const api = {
+  // Sends the file as the raw body; the backend puts it in blob storage and
+  // returns the path to store on the document.
+  uploadFile: (file: File) =>
+    request<{ url: string }>("/uploads", {
+      method: "POST",
+      body: file,
+      headers: { "Content-Type": file.type },
+    }),
+
   getGame: () => get<GameSettings>("/game"),
   updateGame: (patchBody: Partial<GameSettings>) =>
     patch<GameSettings>("/game", patchBody),
@@ -145,12 +169,13 @@ export const api = {
 
   getPlayerClues: (playerId: string) =>
     get<PlayerClue[]>(`/players/${playerId}/clues`),
-  createPlayerClue: (playerId: string, c: Omit<PlayerClue, "id">) =>
-    post<PlayerClue>(`/players/${playerId}/clues`, c),
-  updatePlayerClue: (playerId: string, id: string, c: Partial<PlayerClue>) =>
-    put<PlayerClue>(`/players/${playerId}/clues/${id}`, c),
-  deletePlayerClue: (playerId: string, id: string) =>
-    del(`/players/${playerId}/clues/${id}`),
+  setPlayerClue: (
+    playerId: string,
+    clueId: string,
+    characterId: string | null,
+  ) => put<PlayerClue>(`/players/${playerId}/clues/${clueId}`, { characterId }),
   getPlayerClueStatus: (playerId: string) =>
-    get<{ solved: boolean }>(`/players/${playerId}/clue-status`),
+    get<{ solved: boolean; solvedCharacterIds: string[] }>(
+      `/players/${playerId}/clue-status`,
+    ),
 };

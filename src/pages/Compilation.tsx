@@ -4,6 +4,7 @@ import { useGame } from "../context/GameContext";
 import { ArrowLeft, User } from "lucide-react";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
+import { fileSrc } from "../api/client";
 
 export default function Compilation() {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +33,7 @@ export default function Compilation() {
         <div style={sharedStyles.detailPhoto}>
           {character.imageUrl ? (
             <img
-              src={character.imageUrl}
+              src={fileSrc(character.imageUrl)}
               alt={character.name}
               style={sharedStyles.imgCover}
             />

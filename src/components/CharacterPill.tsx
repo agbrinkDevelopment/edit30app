@@ -3,6 +3,7 @@ import { User } from "lucide-react";
 import { theme } from "../theme";
 import { Character } from "../types";
 import { sharedStyles } from "../shared/styles";
+import { fileSrc } from "../api/client";
 
 interface Props {
   character: Character;
@@ -23,7 +24,7 @@ export default function CharacterPill({ character, selected, onClick }: Props) {
       <span style={styles.avatar}>
         {character.imageUrl ? (
           <img
-            src={character.imageUrl}
+            src={fileSrc(character.imageUrl)}
             alt={character.name}
             style={sharedStyles.imgCover}
           />

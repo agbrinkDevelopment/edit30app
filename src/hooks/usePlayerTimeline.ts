@@ -72,6 +72,7 @@ export function usePlayerTimeline(playerId: string | undefined) {
   };
 
   const removeEvent = (id: string) => {
+    console.log("HERE id= ", id);
     if (!playerId) return;
     api
       .deletePlayerTimelineEvent(playerId, id)

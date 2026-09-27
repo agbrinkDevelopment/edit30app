@@ -7,6 +7,7 @@ import { Check, ChevronRight, User } from "lucide-react";
 import { theme } from "../theme";
 import SubsectionHeader from "./SubsectionHeader";
 import Timeline from "./Timeline";
+import { fileSrc } from "../api/client";
 
 export default function SpotlightCard({
   character,
@@ -53,7 +54,7 @@ export default function SpotlightCard({
         <div style={sharedStyles.victimPhoto}>
           {character.imageUrl ? (
             <img
-              src={character.imageUrl}
+              src={fileSrc(character.imageUrl)}
               alt={character.name}
               style={sharedStyles.victimPhotoImg}
             />

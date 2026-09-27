@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useGame } from "../context/GameContext";
-import { TimelineEvent, GameDocument } from "../types";
+import { Character, Clue, TimelineEvent, GameDocument } from "../types";
 import {
   Plus,
   Trash2,
@@ -12,7 +12,11 @@ import {
   FileText,
   Upload,
   Image as ImageIcon,
+  Skull,
+  User,
 } from "lucide-react";
+import { api, fileSrc } from "../api/client";
+import { reportUploadError } from "../shared/helpers";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Section from "../components/Section";
@@ -44,8 +48,16 @@ export default function Admin() {
         <h1 style={sharedStyles.h1Bold}>Adminpanel</h1>
       </div>
 
+      <Section id="admin-karaktarer" title="Karaktärer">
+        <CharacterAdmin />
+      </Section>
+
       <Section id="admin-tidslinje" title="Tidslinje">
         <TimelineAdmin />
+      </Section>
+
+      <Section id="admin-ledtradar" title="Ledtrådar">
+        <ClueAdmin />
       </Section>
 
       <Section id="admin-dokument" title="Förhörsdokument">
@@ -60,6 +72,268 @@ export default function Admin() {
         <DocumentAdmin kind="victim-notes" />
       </Section>
     </div>
+  );
+}
+
+const emptyCharacter = (): Omit<Character, "id"> => ({
+  name: "",
+  initials: "",
+  role: "suspect",
+  description: "",
+  motive: "",
+  alibi: "",
+  secrets: "",
+  isKiller: false,
+  imageUrl: null,
+});
+
+function CharacterAdmin() {
+  const {
+    game,
+    addCharacter,
+    updateCharacter,
+    removeCharacter,
+    refreshCharacters,
+  } = useGame();
+
+  const [editing, setEditing] = useState<Character | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState(emptyCharacter());
+
+  // Admin edits characters directly, so start from the backend's current state.
+  useEffect(() => {
+    refreshCharacters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startCreate = () => {
+    setDraft(emptyCharacter());
+    setCreating(true);
+    setEditing(null);
+  };
+  const startEdit = (c: Character) => {
+    setDraft(c);
+    setEditing(c);
+    setCreating(false);
+  };
+  const cancel = () => {
+    setEditing(null);
+    setCreating(false);
+  };
+  const save = () => {
+    if (!draft.name.trim()) return;
+    // Only one killer: marking this one clears the flag on everyone else.
+    if (draft.isKiller) {
+      game.characters.forEach((c) => {
+        if (c.isKiller && c.id !== editing?.id)
+          updateCharacter({ ...c, isKiller: false });
+      });
+    }
+    if (creating) addCharacter(draft);
+    else if (editing) updateCharacter({ ...draft, id: editing.id });
+    cancel();
+  };
+  const remove = (c: Character) => {
+    if (window.confirm(`Ta bort ${c.name}?`)) removeCharacter(c.id);
+  };
+
+  const setField = <K extends keyof Omit<Character, "id">>(
+    field: K,
+    value: Omit<Character, "id">[K],
+  ) => setDraft((d) => ({ ...d, [field]: value }));
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    api
+      .uploadFile(file)
+      .then(({ url }) => setField("imageUrl", url))
+      .catch(reportUploadError);
+  };
+
+  const showForm = creating || editing;
+  const characters = [...game.characters].sort(
+    (a, b) => (theme.roleOrder[a.role] ?? 99) - (theme.roleOrder[b.role] ?? 99),
+  );
+
+  return (
+    <>
+      <div style={{ ...sharedStyles.header, marginBottom: 12 }}>
+        <button style={sharedStyles.btn} onClick={startCreate}>
+          <Plus size={16} /> Lägg till karaktär
+        </button>
+      </div>
+
+      {characters.length === 0 ? (
+        <div style={sharedStyles.empty}>Inga karaktärer än.</div>
+      ) : (
+        <div style={sharedStyles.list}>
+          {characters.map((c) => (
+            <div key={c.id} style={sharedStyles.card}>
+              <div style={sharedStyles.cardTop}>
+                <div style={{ ...sharedStyles.cardMeta, flexWrap: "wrap" }}>
+                  <div style={styles.characterThumb}>
+                    {c.imageUrl ? (
+                      <img
+                        src={fileSrc(c.imageUrl)}
+                        alt=""
+                        style={sharedStyles.imgCover}
+                      />
+                    ) : (
+                      <User size={16} color={theme.textFaint} />
+                    )}
+                  </div>
+                  <span style={sharedStyles.name}>{c.name}</span>
+                  <span style={sharedStyles.tag}>
+                    {theme.roleLabels[c.role] ?? c.role}
+                  </span>
+                  {c.isKiller && <Skull size={14} color={theme.primary} />}
+                </div>
+                <div style={sharedStyles.cardActions}>
+                  <button
+                    style={sharedStyles.iconBtn}
+                    onClick={() => startEdit(c)}
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button
+                    style={{ ...sharedStyles.iconBtn, color: theme.primary }}
+                    onClick={() => remove(c)}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+              {c.description && (
+                <p style={sharedStyles.descCompact}>{c.description}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <div style={sharedStyles.formCard}>
+          <h2 style={sharedStyles.formTitle}>
+            {creating ? "Ny karaktär" : `Redigera: ${editing!.name}`}
+          </h2>
+          <div style={sharedStyles.formGrid}>
+            <Field label="Bild" full>
+              <div style={sharedStyles.fileRow}>
+                <div style={styles.filePreview}>
+                  {draft.imageUrl ? (
+                    <img
+                      src={fileSrc(draft.imageUrl)}
+                      alt=""
+                      style={sharedStyles.imgCover}
+                    />
+                  ) : (
+                    <User size={28} color={theme.textFaint} />
+                  )}
+                </div>
+                <label style={sharedStyles.btnSecondary}>
+                  <Upload size={14} /> Ladda upp bild
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                {draft.imageUrl && (
+                  <button
+                    type="button"
+                    style={sharedStyles.btnSecondary}
+                    onClick={() => setField("imageUrl", null)}
+                  >
+                    <X size={15} /> Ta bort bild
+                  </button>
+                )}
+              </div>
+            </Field>
+            <Field label="Namn">
+              <input
+                style={sharedStyles.input}
+                value={draft.name}
+                onChange={(e) => setField("name", e.target.value)}
+              />
+            </Field>
+            <Field label="Initialer">
+              <input
+                style={sharedStyles.input}
+                value={draft.initials}
+                onChange={(e) => setField("initials", e.target.value)}
+                maxLength={4}
+              />
+            </Field>
+            <Field label="Roll">
+              <select
+                style={sharedStyles.input}
+                value={draft.role}
+                onChange={(e) =>
+                  setField("role", e.target.value as Character["role"])
+                }
+              >
+                {Object.entries(theme.roleLabels).map(([role, label]) => (
+                  <option key={role} value={role}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Beskrivning" full>
+              <textarea
+                style={sharedStyles.textarea}
+                value={draft.description}
+                onChange={(e) => setField("description", e.target.value)}
+                rows={3}
+              />
+            </Field>
+            <Field label="Motiv">
+              <textarea
+                style={sharedStyles.textarea}
+                value={draft.motive}
+                onChange={(e) => setField("motive", e.target.value)}
+                rows={2}
+              />
+            </Field>
+            <Field label="Alibi">
+              <textarea
+                style={sharedStyles.textarea}
+                value={draft.alibi}
+                onChange={(e) => setField("alibi", e.target.value)}
+                rows={2}
+              />
+            </Field>
+            <Field label="Hemligheter" full>
+              <textarea
+                style={sharedStyles.textarea}
+                value={draft.secrets}
+                onChange={(e) => setField("secrets", e.target.value)}
+                rows={2}
+              />
+            </Field>
+          </div>
+          <label style={sharedStyles.revealedToggle}>
+            <input
+              type="checkbox"
+              checked={draft.isKiller}
+              onChange={(e) => setField("isKiller", e.target.checked)}
+            />
+            <Skull size={14} color={theme.primary} />
+            <span>Den här karaktären är mördaren</span>
+          </label>
+          <div style={sharedStyles.formActions}>
+            <button style={sharedStyles.btnSecondary} onClick={cancel}>
+              <X size={15} /> Avbryt
+            </button>
+            <button style={sharedStyles.btn} onClick={save}>
+              <Check size={15} /> Spara
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -186,6 +460,220 @@ function TimelineAdmin() {
   );
 }
 
+// A clue is an item (e.g. Fällkniven) and the one character it really
+// belongs to — the answer players' drag-and-drop in the Ledtrådar card is
+// checked against. Stored as the first entry of relatedCharacterIds.
+const emptyClue = (): Omit<Clue, "id"> => ({
+  title: "",
+  description: "",
+  location: "",
+  revealedBy: "",
+  relatedCharacterIds: [],
+  isMacguffin: false,
+  imageUrl: null,
+});
+
+function ClueAdmin() {
+  const { game, addClue, updateClue, removeClue, refreshClues } = useGame();
+
+  const [editing, setEditing] = useState<Clue | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState(emptyClue());
+
+  // Admin edits clues directly, so start from the backend's current state.
+  useEffect(() => {
+    refreshClues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startCreate = () => {
+    setDraft(emptyClue());
+    setCreating(true);
+    setEditing(null);
+  };
+  const startEdit = (c: Clue) => {
+    setDraft(c);
+    setEditing(c);
+    setCreating(false);
+  };
+  const cancel = () => {
+    setEditing(null);
+    setCreating(false);
+  };
+  const save = () => {
+    if (!draft.title.trim()) return;
+    if (creating) addClue(draft);
+    else if (editing) updateClue({ ...draft, id: editing.id });
+    cancel();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    api
+      .uploadFile(file)
+      .then(({ url }) => setDraft((d) => ({ ...d, imageUrl: url })))
+      .catch(reportUploadError);
+  };
+
+  const showForm = creating || editing;
+  const charById = new Map(game.characters.map((c) => [c.id, c]));
+  const ownerOptions = game.characters.filter(
+    (c) => c.role === "suspect" || c.role === "detective",
+  );
+
+  return (
+    <>
+      <div style={{ ...sharedStyles.header, marginBottom: 12 }}>
+        <button style={sharedStyles.btn} onClick={startCreate}>
+          <Plus size={16} /> Lägg till ledtråd
+        </button>
+      </div>
+
+      {game.clues.length === 0 ? (
+        <div style={sharedStyles.empty}>Inga ledtrådar än.</div>
+      ) : (
+        <div style={sharedStyles.list}>
+          {game.clues.map((clue) => {
+            const ownerId = clue.relatedCharacterIds[0];
+            return (
+              <div key={clue.id} style={sharedStyles.card}>
+                <div style={sharedStyles.cardTop}>
+                  <div style={{ ...sharedStyles.cardMeta, flexWrap: "wrap" }}>
+                    <div style={styles.clueThumb}>
+                      {clue.imageUrl ? (
+                        <img
+                          src={fileSrc(clue.imageUrl)}
+                          alt=""
+                          style={sharedStyles.imgCover}
+                        />
+                      ) : (
+                        <ImageIcon size={16} color={theme.textFaint} />
+                      )}
+                    </div>
+                    <span style={sharedStyles.name}>{clue.title}</span>
+                    <span style={sharedStyles.tag}>
+                      {ownerId
+                        ? charById.get(ownerId)?.name ?? "Okänd"
+                        : "Ingen karaktär"}
+                    </span>
+                  </div>
+                  <div style={sharedStyles.cardActions}>
+                    <button
+                      style={sharedStyles.iconBtn}
+                      onClick={() => startEdit(clue)}
+                    >
+                      <Edit2 size={15} />
+                    </button>
+                    <button
+                      style={{ ...sharedStyles.iconBtn, color: theme.primary }}
+                      onClick={() => removeClue(clue.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                {clue.description && (
+                  <p style={sharedStyles.descCompact}>{clue.description}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showForm && (
+        <div style={sharedStyles.formCard}>
+          <h2 style={sharedStyles.formTitle}>
+            {creating ? "Ny ledtråd" : `Redigera: ${editing!.title}`}
+          </h2>
+          <div style={sharedStyles.formGridSingle}>
+            <Field label="Titel" full>
+              <input
+                style={sharedStyles.input}
+                value={draft.title}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, title: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label="Beskrivning" full>
+              <textarea
+                style={sharedStyles.textarea}
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, description: e.target.value }))
+                }
+                rows={3}
+              />
+            </Field>
+            <Field label="Tillhör karaktär" full>
+              <select
+                style={sharedStyles.input}
+                value={draft.relatedCharacterIds[0] ?? ""}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    relatedCharacterIds: e.target.value ? [e.target.value] : [],
+                  }))
+                }
+              >
+                <option value="">Ingen</option>
+                {ownerOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({theme.roleLabels[c.role] ?? c.role})
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Bild" full>
+              <div style={sharedStyles.fileRow}>
+                <div style={styles.filePreview}>
+                  {draft.imageUrl ? (
+                    <img
+                      src={fileSrc(draft.imageUrl)}
+                      alt=""
+                      style={sharedStyles.imgCover}
+                    />
+                  ) : (
+                    <ImageIcon size={28} color={theme.textFaint} />
+                  )}
+                </div>
+                <label style={sharedStyles.btnSecondary}>
+                  <Upload size={14} /> Ladda upp bild
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                {draft.imageUrl && (
+                  <button
+                    type="button"
+                    style={sharedStyles.btnSecondary}
+                    onClick={() => setDraft((d) => ({ ...d, imageUrl: null }))}
+                  >
+                    <X size={15} /> Ta bort bild
+                  </button>
+                )}
+              </div>
+            </Field>
+          </div>
+          <div style={sharedStyles.formActions}>
+            <button style={sharedStyles.btnSecondary} onClick={cancel}>
+              <X size={15} /> Avbryt
+            </button>
+            <button style={sharedStyles.btn} onClick={save}>
+              <Check size={15} /> Spara
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 type DocumentAdminKind = "document" | "news" | "victim-notes";
 
 function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
@@ -261,8 +749,10 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
   };
   const save = () => {
     if (!draft.title.trim() || !draft.fileUrl) return;
-    if (creating) add(draft);
-    else if (editing) update({ ...draft, id: editing.id });
+    // "Ingen" in the dropdown is an empty string; store it as no link.
+    const doc = { ...draft, relatedCharacterId: draft.relatedCharacterId || null };
+    if (creating) add(doc);
+    else if (editing) update({ ...doc, id: editing.id });
     cancel();
   };
   const setField = (
@@ -273,25 +763,34 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setField("fileUrl", reader.result as string);
-      setField("fileType", file.type);
-    };
-    reader.readAsDataURL(file);
+    api
+      .uploadFile(file)
+      .then(({ url }) => {
+        setField("fileUrl", url);
+        setField("fileType", file.type);
+      })
+      .catch(reportUploadError);
   };
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setField("imageUrl", reader.result as string);
-    reader.readAsDataURL(file);
+    api
+      .uploadFile(file)
+      .then(({ url }) => setField("imageUrl", url))
+      .catch(reportUploadError);
   };
 
   const showForm = creating || editing;
-  const relatedOptions = game.characters.filter(
-    (c) => c.role === "suspect" || c.role === "witness",
-  );
+  // Förhörsdokument belong to someone who was questioned; news articles
+  // and notes can mention anyone, and news usually isn't about anyone.
+  const relatedOptions =
+    kind === "document"
+      ? game.characters.filter(
+          (c) => c.role === "suspect" || c.role === "witness",
+        )
+      : game.characters;
+  const relatedLabel =
+    kind === "news" ? "Kopplad karaktär (valfritt)" : "Kopplad karaktär";
   const addLabel = {
     document: "Lägg till dokument",
     news: "Lägg till artikel",
@@ -389,7 +888,7 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
               />
             </Field>
             {relatedOptions.length > 0 && (
-              <Field label="Kopplad karaktär" full>
+              <Field label={relatedLabel} full>
                 <select
                   style={sharedStyles.input}
                   value={draft.relatedCharacterId ?? ""}
@@ -412,7 +911,7 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
                   <div style={styles.filePreview}>
                     {draft.fileType.startsWith("image/") ? (
                       <img
-                        src={draft.fileUrl}
+                        src={fileSrc(draft.fileUrl)}
                         alt=""
                         style={sharedStyles.imgCover}
                       />
@@ -449,7 +948,7 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
                 <div style={styles.filePreview}>
                   {draft.imageUrl ? (
                     <img
-                      src={draft.imageUrl}
+                      src={fileSrc(draft.imageUrl)}
                       alt=""
                       style={sharedStyles.imgCover}
                     />
@@ -507,7 +1006,7 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
           <div style={sharedStyles.viewerHeader}>
             {viewing.imageUrl && (
               <img
-                src={viewing.imageUrl}
+                src={fileSrc(viewing.imageUrl)}
                 alt=""
                 style={sharedStyles.viewerHeaderImg}
               />
@@ -522,13 +1021,13 @@ function DocumentAdmin({ kind }: { kind: DocumentAdminKind }) {
           <div style={sharedStyles.viewerFrame}>
             {viewing.fileType.startsWith("image/") ? (
               <img
-                src={viewing.fileUrl}
+                src={fileSrc(viewing.fileUrl)}
                 alt={viewing.title}
                 style={sharedStyles.viewerImg}
               />
             ) : (
               <iframe
-                src={`${viewing.fileUrl}#zoom=100`}
+                src={`${fileSrc(viewing.fileUrl)}#zoom=100`}
                 title={viewing.title}
                 style={sharedStyles.viewerIframe}
               />
@@ -576,14 +1075,36 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     marginBottom: 28,
     paddingBottom: 4,
-    borderBottom: `2px solid ${theme.textFaint}`,
+    borderBottom: `2px solid ${theme.cardBorder}`,
+  },
+  characterThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    background: theme.inputBg,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    flexShrink: 0,
+  },
+  clueThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    background: theme.inputBg,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    flexShrink: 0,
   },
   filePreview: {
     width: 56,
     height: 56,
     borderRadius: 8,
     background: theme.inputBg,
-    border: `1px solid ${theme.textFaint}`,
+    border: `1px solid ${theme.textMuted}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",

@@ -1,27 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
-import { PlayerClue } from "../types";
 
-// A player's own, private reconstruction of the clues, and whether it
-// currently matches the real clues (compared server-side — the real content
-// is never sent to the browser). Mirrors usePlayerTimeline / usePlayerEvidence.
+// A player's own mapping of clues (items) to characters, and whether it
+// matches the real owners in the clues table (compared server-side — overall
+// and per character). Mirrors usePlayerTimeline / usePlayerEvidence.
 export function usePlayerClue(playerId: string | undefined) {
-  const [items, setItems] = useState<PlayerClue[]>([]);
+  // clueId -> characterId; a missing entry means unassigned.
+  const [assignments, setAssignments] = useState<Record<string, string | null>>(
+    {},
+  );
   const [solved, setSolved] = useState(false);
+  const [solvedCharacterIds, setSolvedCharacterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!!playerId);
 
   const refreshStatus = useCallback(() => {
     if (!playerId) return;
     api
       .getPlayerClueStatus(playerId)
-      .then((s) => setSolved(s.solved))
+      .then((s) => {
+        setSolved(s.solved);
+        setSolvedCharacterIds(s.solvedCharacterIds);
+      })
       .catch(() => undefined);
   }, [playerId]);
 
   useEffect(() => {
     if (!playerId) {
-      setItems([]);
+      setAssignments({});
       setSolved(false);
+      setSolvedCharacterIds([]);
       setLoading(false);
       return;
     }
@@ -30,7 +37,10 @@ export function usePlayerClue(playerId: string | undefined) {
     api
       .getPlayerClues(playerId)
       .then((cs) => {
-        if (!cancelled) setItems(cs);
+        if (!cancelled)
+          setAssignments(
+            Object.fromEntries(cs.map((c) => [c.clueId, c.characterId])),
+          );
       })
       .catch(() => undefined)
       .finally(() => {
@@ -42,43 +52,22 @@ export function usePlayerClue(playerId: string | undefined) {
     };
   }, [playerId, refreshStatus]);
 
-  // Each mutator updates local state and rechecks the solved status only
-  // once the server has confirmed the change — not before. Doing it
-  // optimistically races the still-in-flight write: the status check can
-  // reach the server before the write does and read the stale answer, with
-  // nothing to correct it afterwards (that required a reload to fix).
-  const addItem = (c: Omit<PlayerClue, "id">) => {
+  // The drop itself is shown immediately so dragging feels instant, but the
+  // solved status is only rechecked once the server has confirmed the write
+  // — checking earlier can race the write and read the stale answer. A
+  // failed write puts the item back where it was.
+  const assign = (clueId: string, characterId: string | null) => {
     if (!playerId) return;
+    const previous = assignments[clueId] ?? null;
+    if (previous === characterId) return;
+    setAssignments((prev) => ({ ...prev, [clueId]: characterId }));
     api
-      .createPlayerClue(playerId, c)
-      .then((created) => {
-        setItems((prev) => [...prev, created]);
-        refreshStatus();
-      })
-      .catch(() => undefined);
+      .setPlayerClue(playerId, clueId, characterId)
+      .then(() => refreshStatus())
+      .catch(() =>
+        setAssignments((prev) => ({ ...prev, [clueId]: previous })),
+      );
   };
 
-  const updateItem = (c: PlayerClue) => {
-    if (!playerId) return;
-    api
-      .updatePlayerClue(playerId, c.id, c)
-      .then(() => {
-        setItems((prev) => prev.map((x) => (x.id === c.id ? c : x)));
-        refreshStatus();
-      })
-      .catch(() => undefined);
-  };
-
-  const removeItem = (id: string) => {
-    if (!playerId) return;
-    api
-      .deletePlayerClue(playerId, id)
-      .then(() => {
-        setItems((prev) => prev.filter((x) => x.id !== id));
-        refreshStatus();
-      })
-      .catch(() => undefined);
-  };
-
-  return { items, solved, loading, addItem, updateItem, removeItem };
+  return { assignments, solved, solvedCharacterIds, loading, assign };
 }

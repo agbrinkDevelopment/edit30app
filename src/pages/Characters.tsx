@@ -15,6 +15,8 @@ import {
   Clock,
   ChevronRight,
 } from "lucide-react";
+import { api, fileSrc } from "../api/client";
+import { reportUploadError } from "../shared/helpers";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Timeline from "../components/Timeline";
@@ -83,9 +85,10 @@ export default function Characters() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setField("imageUrl", reader.result as string);
-    reader.readAsDataURL(file);
+    api
+      .uploadFile(file)
+      .then(({ url }) => setField("imageUrl", url))
+      .catch(reportUploadError);
   };
 
   const showForm = isAdmin && (editing || creating);
@@ -115,7 +118,7 @@ export default function Characters() {
               <div style={styles.photoRow}>
                 <div style={styles.photoPreview}>
                   {draft.imageUrl ? (
-                    <img src={draft.imageUrl} alt="" style={sharedStyles.imgCover} />
+                    <img src={fileSrc(draft.imageUrl)} alt="" style={sharedStyles.imgCover} />
                   ) : (
                     <User size={28} color={theme.textFaint} />
                   )}
@@ -239,7 +242,7 @@ export default function Characters() {
               <div style={styles.imageCard}>
                 {c.imageUrl ? (
                   <img
-                    src={c.imageUrl}
+                    src={fileSrc(c.imageUrl)}
                     alt={c.name}
                     style={sharedStyles.imgCover}
                   />

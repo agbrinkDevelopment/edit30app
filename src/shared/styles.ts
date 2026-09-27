@@ -206,9 +206,9 @@ export const styles: Record<string, React.CSSProperties> = {
     color: theme.primaryText,
     border: `1px solid ${theme.textFaint}`,
     borderRadius: 20,
-    padding: "7px 14px",
+    padding: "8px 14px",
     fontWeight: 700,
-    fontSize: 14,
+    fontSize: 15,
     cursor: "pointer",
   },
   guessResult: {
@@ -254,7 +254,11 @@ export const styles: Record<string, React.CSSProperties> = {
     marginBottom: 14,
     minHeight: 160,
     background: theme.inputBg,
-    border: `1px solid ${theme.inputBorder}`,
+    // Longhands, not `border`: sortBucketOver overrides borderColor, and
+    // React warns when a shorthand and its longhands are mixed on rerender.
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: theme.inputBorder,
     borderRadius: 12,
     padding: 14,
     transition: "border-color 0.15s, background 0.15s",
@@ -368,7 +372,7 @@ export const styles: Record<string, React.CSSProperties> = {
     width: 26,
     height: 26,
     borderRadius: 18,
-    background: theme.cardBg,
+    background: theme.bg,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -544,7 +548,7 @@ export const sharedStyles: Record<string, React.CSSProperties> = {
     marginBottom: 28,
   },
   h1: { margin: 0, fontSize: 26, fontWeight: 700, color: theme.text },
-  h1Bold: { margin: 0, fontSize: 40, fontWeight: 900, color: theme.text },
+  h1Bold: { margin: 0, fontSize: 35, fontWeight: 700, color: theme.text },
   name: { fontWeight: 600, fontSize: 16, color: theme.text },
   empty: {
     color: theme.textFaint,

@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import { useGame } from "../context/GameContext";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
+import { fileSrc } from "../api/client";
 
 const links = [
   { to: "/", label: "Utredningen", icon: Gamepad },
@@ -81,7 +82,7 @@ export default function Navbar() {
               <div style={styles.detectiveAvatar} title={detective.name}>
                 {detective.imageUrl ? (
                   <img
-                    src={detective.imageUrl}
+                    src={fileSrc(detective.imageUrl)}
                     alt={detective.name}
                     style={sharedStyles.imgCover}
                   />

@@ -6,6 +6,7 @@ import { theme } from "../theme";
 import { Check, ChevronRight, User } from "lucide-react";
 import SubsectionHeader from "./SubsectionHeader";
 import Timeline from "./Timeline";
+import { fileSrc } from "../api/client";
 
 export default function CharacterGrid({
   characters,
@@ -56,7 +57,7 @@ export default function CharacterGrid({
               <div style={sharedStyles.victimPhoto}>
                 {c.imageUrl ? (
                   <img
-                    src={c.imageUrl}
+                    src={fileSrc(c.imageUrl)}
                     alt={c.name}
                     style={sharedStyles.victimPhotoImg}
                   />

@@ -14,6 +14,8 @@ import {
   Upload,
   Image as ImageIcon,
 } from "lucide-react";
+import { api, fileSrc } from "../api/client";
+import { reportUploadError } from "../shared/helpers";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Modal from "../components/Modal";
@@ -69,20 +71,22 @@ export default function Documents() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setField("fileUrl", reader.result as string);
-      setField("fileType", file.type);
-    };
-    reader.readAsDataURL(file);
+    api
+      .uploadFile(file)
+      .then(({ url }) => {
+        setField("fileUrl", url);
+        setField("fileType", file.type);
+      })
+      .catch(reportUploadError);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setField("imageUrl", reader.result as string);
-    reader.readAsDataURL(file);
+    api
+      .uploadFile(file)
+      .then(({ url }) => setField("imageUrl", url))
+      .catch(reportUploadError);
   };
 
   const showForm = isAdmin && (editing || creating);
@@ -128,7 +132,7 @@ export default function Documents() {
                   <div style={styles.filePreview}>
                     {draft.fileType.startsWith("image/") ? (
                       <img
-                        src={draft.fileUrl}
+                        src={fileSrc(draft.fileUrl)}
                         alt=""
                         style={sharedStyles.imgCover}
                       />
@@ -165,7 +169,7 @@ export default function Documents() {
                 <div style={styles.filePreview}>
                   {draft.imageUrl ? (
                     <img
-                      src={draft.imageUrl}
+                      src={fileSrc(draft.imageUrl)}
                       alt=""
                       style={sharedStyles.imgCover}
                     />
@@ -235,7 +239,7 @@ export default function Documents() {
                 >
                   {doc.imageUrl || doc.fileType.startsWith("image/") ? (
                     <img
-                      src={doc.imageUrl || doc.fileUrl}
+                      src={fileSrc(doc.imageUrl || doc.fileUrl)}
                       alt=""
                       style={sharedStyles.imgCover}
                     />
@@ -309,7 +313,7 @@ export default function Documents() {
           <div style={sharedStyles.viewerHeader}>
             {viewing.imageUrl && (
               <img
-                src={viewing.imageUrl}
+                src={fileSrc(viewing.imageUrl)}
                 alt=""
                 style={sharedStyles.viewerHeaderImg}
               />
@@ -324,13 +328,13 @@ export default function Documents() {
           <div style={sharedStyles.viewerFrame}>
             {viewing.fileType.startsWith("image/") ? (
               <img
-                src={viewing.fileUrl}
+                src={fileSrc(viewing.fileUrl)}
                 alt={viewing.title}
                 style={sharedStyles.viewerImg}
               />
             ) : (
               <iframe
-                src={`${viewing.fileUrl}#zoom=100`}
+                src={`${fileSrc(viewing.fileUrl)}#zoom=100`}
                 title={viewing.title}
                 style={sharedStyles.viewerIframe}
               />

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useGame } from "../context/GameContext";
 import { GameDocument } from "../types";
 import { BookOpen, Eye, FileText } from "lucide-react";
+import { fileSrc } from "../api/client";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Modal from "../components/Modal";
@@ -60,7 +61,7 @@ export default function Evidence() {
                   >
                     {doc.imageUrl || doc.fileType.startsWith("image/") ? (
                       <img
-                        src={doc.imageUrl || doc.fileUrl}
+                        src={fileSrc(doc.imageUrl || doc.fileUrl)}
                         alt=""
                         style={sharedStyles.imgCover}
                       />
@@ -73,7 +74,10 @@ export default function Evidence() {
                   )}
                   <div style={styles.folderActions}>
                     <button
-                      style={{ ...sharedStyles.btnSecondary, justifyContent: "flex-end" }}
+                      style={{
+                        ...sharedStyles.btnSecondary,
+                        justifyContent: "flex-end",
+                      }}
                       onClick={() => setViewing(doc)}
                       disabled={!doc.fileUrl}
                     >
@@ -109,7 +113,7 @@ export default function Evidence() {
                 >
                   {article.imageUrl || article.fileType.startsWith("image/") ? (
                     <img
-                      src={article.imageUrl || article.fileUrl}
+                      src={fileSrc(article.imageUrl || article.fileUrl)}
                       alt=""
                       style={sharedStyles.imgCover}
                     />
@@ -120,13 +124,15 @@ export default function Evidence() {
                 {article.description && (
                   <p style={sharedStyles.descCompact}>{article.description}</p>
                 )}
-                <div style={styles.folderBottomRow}>
+                <div style={styles.folderActions}>
                   <button
-                    style={{ ...sharedStyles.btnSecondary, justifyContent: "flex-end" }}
+                    style={{
+                      ...sharedStyles.btnSecondary,
+                    }}
                     onClick={() => setViewing(article)}
                     disabled={!article.fileUrl}
                   >
-                    <Eye size={14} /> Läs
+                    <Eye size={14} /> Visa
                   </button>
                 </div>
               </div>
@@ -155,7 +161,7 @@ export default function Evidence() {
                 >
                   {note.imageUrl || note.fileType.startsWith("image/") ? (
                     <img
-                      src={note.imageUrl || note.fileUrl}
+                      src={fileSrc(note.imageUrl || note.fileUrl)}
                       alt=""
                       style={sharedStyles.imgCover}
                     />
@@ -167,9 +173,12 @@ export default function Evidence() {
                 {note.description && (
                   <p style={sharedStyles.descCompact}>{note.description}</p>
                 )}
-                <div style={styles.folderBottomRow}>
+                <div style={styles.folderActions}>
                   <button
-                    style={{ ...sharedStyles.btnSecondary, justifyContent: "flex-end" }}
+                    style={{
+                      ...sharedStyles.btnSecondary,
+                      justifyContent: "flex-end",
+                    }}
                     onClick={() => setViewing(note)}
                     disabled={!note.fileUrl}
                   >
@@ -187,7 +196,7 @@ export default function Evidence() {
           <div style={sharedStyles.viewerHeader}>
             {viewing.imageUrl && (
               <img
-                src={viewing.imageUrl}
+                src={fileSrc(viewing.imageUrl)}
                 alt=""
                 style={sharedStyles.viewerHeaderImg}
               />
@@ -202,13 +211,13 @@ export default function Evidence() {
           <div style={sharedStyles.viewerFrame}>
             {viewing.fileType.startsWith("image/") ? (
               <img
-                src={viewing.fileUrl}
+                src={fileSrc(viewing.fileUrl)}
                 alt={viewing.title}
                 style={sharedStyles.viewerImg}
               />
             ) : (
               <iframe
-                src={`${viewing.fileUrl}#zoom=100`}
+                src={`${fileSrc(viewing.fileUrl)}#zoom=100`}
                 title={viewing.title}
                 style={sharedStyles.viewerIframe}
               />
@@ -242,8 +251,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   folderWrap: { position: "relative", marginTop: 20 },
   newsStack: {
-    marginTop: 30,
-    marginLeft: 12,
+    marginTop: 6,
+    marginLeft: 6,
     borderRadius: "0 10px 10px 10px",
     boxShadow: [
       `-2px -2px 0 0 ${theme.cardBg}`,
@@ -298,9 +307,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   folderActions: {
     display: "flex",
-    flexDirection: "column",
     gap: 8,
-    alignItems: "stretch",
   },
   folderBottomRow: {
     display: "flex",

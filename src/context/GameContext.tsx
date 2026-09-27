@@ -41,6 +41,8 @@ interface GameContextType {
   addClue: (c: Omit<Clue, "id">) => void;
   updateClue: (c: Clue) => void;
   removeClue: (id: string) => void;
+  refreshClues: () => void;
+  refreshCharacters: () => void;
   addScene: (s: Omit<Scene, "id" | "order">) => void;
   updateScene: (s: Scene) => void;
   removeScene: (id: string) => void;
@@ -192,6 +194,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       clues: g.clues.filter((x) => x.id !== id),
     }));
     api.deleteClue(id).catch(reportError);
+  };
+  // Re-reads clues from the backend, so a view that edits them (Admin)
+  // starts from what's actually stored rather than what was loaded at startup.
+  const refreshCharacters = () => {
+    api
+      .getCharacters()
+      .then((characters) => setGame((g) => ({ ...g, characters })))
+      .catch(reportError);
+  };
+  const refreshClues = () => {
+    api
+      .getClues()
+      .then((clues) => setGame((g) => ({ ...g, clues })))
+      .catch(reportError);
   };
 
   // --- Scenes: no active page reads these yet, so they stay local-only for
@@ -389,6 +405,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         addClue,
         updateClue,
         removeClue,
+        refreshClues,
+        refreshCharacters,
         addScene,
         updateScene,
         removeScene,

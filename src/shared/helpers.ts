@@ -1,10 +1,16 @@
 import { theme } from "../theme";
-import {
-  CORRECT_OWNER_FOR_ITEM,
-  INVESTIGATION_SECTIONS,
-  SORT_ITEMS,
-  SORT_KEY,
-} from "./data";
+import { INVESTIGATION_SECTIONS } from "./data";
+
+export function toMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+export function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 
 export function subsectionKey(characterId: string, section: string): string {
   return `${characterId}__${section}`;
@@ -34,40 +40,17 @@ export function loadProgress(progressKey: string): Record<string, boolean> {
   }
 }
 
-export function correctItemsFor(characterId: string): string[] {
-  return SORT_ITEMS.filter(
-    (item) => CORRECT_OWNER_FOR_ITEM[item.id] === characterId,
-  ).map((item) => item.id);
-}
-
-export function isBucketSolved(
-  characterId: string,
-  itemBucket: Record<string, string>,
-): boolean {
-  const correct = correctItemsFor(characterId);
-  if (correct.length === 0) return false;
-  const current = SORT_ITEMS.filter(
-    (item) => itemBucket[item.id] === characterId,
-  ).map((item) => item.id);
-  if (current.length !== correct.length) return false;
-  const correctSet = new Set(correct);
-  return current.every((id) => correctSet.has(id));
-}
-
-export function loadSort(): Record<string, string> {
-  try {
-    const saved = localStorage.getItem(SORT_KEY);
-    return saved ? JSON.parse(saved) : {};
-  } catch {
-    return {};
-  }
-}
-
 export function isCharacterInvestigated(
   characterId: string,
   progress: Record<string, boolean>,
 ): boolean {
   return INVESTIGATION_SECTIONS.every(
     (section) => !!progress[subsectionKey(characterId, section)],
+  );
+}
+
+export function reportUploadError(err: unknown) {
+  window.alert(
+    `Kunde inte ladda upp filen: ${err instanceof Error ? err.message : String(err)}`,
   );
 }
