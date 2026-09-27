@@ -51,7 +51,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
     zIndex: 150,
   },
   header: {
