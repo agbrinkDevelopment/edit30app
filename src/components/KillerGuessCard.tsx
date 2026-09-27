@@ -1,12 +1,7 @@
 import React, { useState } from "react";
 import { styles as sharedStyles } from "../shared/styles";
 import { useGame } from "../context/GameContext";
-import {
-  AlertTriangle,
-  ChevronDown,
-  HelpCircleIcon,
-  User,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, HelpCircleIcon, User } from "lucide-react";
 import { formatElapsed } from "../shared/helpers";
 import { usePlayerSections } from "../context/PlayerSectionsContext";
 import { theme } from "../theme";
@@ -54,7 +49,7 @@ export default function KillerGuessCard({
             particleCount: 240,
             spread: 120,
             startVelocity: 100,
-            origin: { y: 0.4 },
+            origin: { y: 0.6 },
             disableForReducedMotion: true,
           });
         }

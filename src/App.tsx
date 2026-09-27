@@ -125,7 +125,10 @@ function AppShell() {
 
       <style>{`
         @media (max-width: 768px) {
-          .app-pagewrap { grid-template-columns: 1fr !important; }
+          .app-pagewrap {
+            grid-template-columns: 1fr !important;
+            padding-top: 0 !important;
+          }
           .app-side-right { display: none !important; }
           /* Timer + section nav become one row that sticks just under the
              56px top navbar. The negative margins stretch its background to
@@ -154,7 +157,7 @@ function AppShell() {
           .app-pagewrap section[id] { scroll-margin-top: 124px !important; }
         }
         @media (max-width: 480px) {
-          .app-pagewrap { padding: 16px !important; gap: 20px !important; }
+          .app-pagewrap { padding: 0 16px 16px !important; gap: 20px !important; }
           .app-side-left { margin: 0 -16px; padding: 8px 16px; }
         }
       `}</style>

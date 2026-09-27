@@ -65,8 +65,10 @@ export default function SectionCheckCircle({
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  // Block-level flex, not inline-flex: an inline box sits on its parent's
+  // text baseline, leaving a gap below that pushes the circles off-centre.
   wrapper: {
-    display: "inline-flex",
+    display: "flex",
     alignItems: "center",
     gap: 6,
   },
