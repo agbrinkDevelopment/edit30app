@@ -39,11 +39,11 @@ export default function InfoButton() {
 const styles: Record<string, React.CSSProperties> = {
   fab: {
     position: "fixed",
-    bottom: 16,
-    right: 16,
+    bottom: 0,
+    right: 0,
     width: 52,
     height: 52,
-    borderRadius: "50%",
+    borderTopLeftRadius: "50%",
     background: theme.textFaint,
     border: "none",
     display: "flex",
