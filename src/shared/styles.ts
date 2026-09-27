@@ -62,8 +62,8 @@ export const styles: Record<string, React.CSSProperties> = {
   },
   killerCard: {
     display: "flex",
-    alignItems: "center",
-    gap: 30,
+    alignItems: "flex-start",
+    gap: 12,
     flexWrap: "wrap",
     background: theme.cardBg,
     borderRadius: 12,
@@ -97,13 +97,13 @@ export const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     gap: 8,
   },
+  // One section per row: circles, then the section name.
   checklist: {
     display: "flex",
-    flexWrap: "wrap",
-    gap: "8px 20px",
+    flexDirection: "column",
+    gap: 8,
   },
   checklistItem: {
-    display: "flex",
     alignItems: "center",
     gap: 8,
     color: theme.textMuted,
@@ -127,14 +127,16 @@ export const styles: Record<string, React.CSSProperties> = {
   guessRow: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 6,
+    paddingBottom: 4,
+    paddingTop: 14,
     flexWrap: "wrap",
   },
+  // Stretches so the picker + "Utvärdera" fill the row.
   guessDropdownWrap: {
     position: "relative",
     flex: 1,
     minWidth: 180,
-    maxWidth: 300,
   },
   guessDropdownTrigger: {
     width: "100%",
@@ -202,6 +204,7 @@ export const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   guessBtn: {
+    flexShrink: 0,
     background: theme.textFaint,
     color: theme.primaryText,
     border: `1px solid ${theme.textFaint}`,

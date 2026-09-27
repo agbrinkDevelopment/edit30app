@@ -4,10 +4,11 @@ import { theme } from "../theme";
 import { usePlayerSections } from "../context/PlayerSectionsContext";
 
 // A section's status, used in each section header and in the Mördaren
-// checklist. The first circle is plain completion: a green check once the
-// section is actually done, whether or not the player took the hint or
-// skipped it. When they did, a second circle to its right says which —
-// a yellow lamp for a revealed hint, or a red skip icon (skip wins).
+// checklist, as two circles that are always shown:
+// - left: whether the hint was used — a yellow lamp, else empty;
+// - right: how the section ended — a green check once it's actually done
+//   (even if it was skipped first), a red skip icon if skipped and not done,
+//   else empty.
 export default function SectionCheckCircle({
   sectionId,
   done,
@@ -29,13 +30,27 @@ export default function SectionCheckCircle({
 }) {
   const { sections } = usePlayerSections();
   const section = sections[sectionId];
+  const hintUsed = !!section?.hintUsed;
+  const skipped = !!section?.skipped;
 
   return (
     <span style={{ ...styles.wrapper, ...wrapperStyle }}>
-      <span style={{ ...baseStyle, ...(done ? doneStyle : {}) }} title={title}>
-        {done && <Check size={iconSize} color={theme.primaryText} />}
+      <span
+        style={{
+          ...baseStyle,
+          ...(hintUsed
+            ? { background: theme.hint, borderColor: theme.hint }
+            : {}),
+        }}
+        title={hintUsed ? "Ledtråd visad" : "Ingen ledtråd använd"}
+      >
+        {hintUsed && <Lightbulb size={iconSize} color={theme.hintText} />}
       </span>
-      {section?.skipped ? (
+      {done ? (
+        <span style={{ ...baseStyle, ...doneStyle }} title={title}>
+          <Check size={iconSize} color={theme.primaryText} />
+        </span>
+      ) : skipped ? (
         <span
           style={{
             ...baseStyle,
@@ -47,18 +62,7 @@ export default function SectionCheckCircle({
           <SkipForward size={iconSize} color={theme.primaryText} />
         </span>
       ) : (
-        section?.hintUsed && (
-          <span
-            style={{
-              ...baseStyle,
-              background: theme.hint,
-              borderColor: theme.hint,
-            }}
-            title="Ledtråd visad"
-          >
-            <Lightbulb size={iconSize} color={theme.hintText} />
-          </span>
-        )
+        <span style={baseStyle} title={title} />
       )}
     </span>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { Lightbulb, SkipForward } from "lucide-react";
 import { theme } from "../theme";
+import { sharedStyles } from "../shared/styles";
 import { usePlayerSections } from "../context/PlayerSectionsContext";
 
 function formatPenalty(seconds: number): string {
@@ -51,7 +52,9 @@ export default function SectionHelp({
     <div style={styles.wrap}>
       {section.hintUsed && section.hint && (
         <div style={styles.hintBox}>
-          <Lightbulb size={14} color={theme.accent} style={{ flexShrink: 0 }} />
+          <span style={styles.hintIcon}>
+            <Lightbulb size={12} color={theme.hintText} />
+          </span>
           <span>{section.hint}</span>
         </div>
       )}
@@ -99,6 +102,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     color: theme.text,
     lineHeight: 1.5,
+  },
+  // Same look as the hint circle in SectionCheckCircle.
+  hintIcon: {
+    ...sharedStyles.pillCheckCircle,
+    flexShrink: 0,
+    background: theme.hint,
+    borderColor: theme.hint,
   },
   skippedTag: {
     display: "inline-flex",

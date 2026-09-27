@@ -49,7 +49,7 @@ export default function KillerGuessCard({
             particleCount: 240,
             spread: 120,
             startVelocity: 50,
-            origin: { y: 0.6 },
+            origin: { y: 1 },
             disableForReducedMotion: true,
           });
         }
@@ -101,6 +101,16 @@ export default function KillerGuessCard({
         <div style={sharedStyles.checklist}>
           {mysterySteps.map((step) => (
             <div key={step.id} style={sharedStyles.checklistItem}>
+              <div
+                style={{
+                  borderBottom: `1px solid ${theme.cardBorder}`,
+                  paddingBottom: 2,
+                  marginBottom: 8,
+                }}
+              >
+                {step.label}
+              </div>
+
               <SectionCheckCircle
                 sectionId={step.id}
                 done={step.done}
@@ -108,7 +118,6 @@ export default function KillerGuessCard({
                 doneStyle={sharedStyles.checkCircleDone}
                 iconSize={12}
               />
-              {step.label}
             </div>
           ))}
         </div>
@@ -190,27 +199,29 @@ export default function KillerGuessCard({
             Utvärdera
           </button>
         </div>
-        {result && (
-          <p
-            style={{
-              ...sharedStyles.guessResult,
-              color: result.correct ? theme.success : theme.primary,
-            }}
-          >
-            {result.correct
-              ? "Rätt gissat! Du har löst mysteriet."
-              : "Fel gissning – mysteriet förblev olöst."}{" "}
-            Din tid: {formatElapsed(result.totalSeconds)}
-            {result.penaltySeconds > 0 &&
-              ` (varav ${formatElapsed(result.penaltySeconds)} tillägg)`}
-          </p>
-        )}
-        {!result && !allStepsDone && (
-          <p style={{ ...sharedStyles.guessResult, color: theme.textMuted }}>
-            Slutför eller hoppa över:{" "}
-            {remainingSteps.map((s) => s.label).join(", ")}
-          </p>
-        )}
+        <div style={{ paddingBottom: 4 }}>
+          {result && (
+            <p
+              style={{
+                ...sharedStyles.guessResult,
+                color: result.correct ? theme.success : theme.primary,
+              }}
+            >
+              {result.correct
+                ? "Rätt gissat! Du har löst mysteriet."
+                : "Fel gissning – mysteriet förblev olöst."}{" "}
+              Din tid: {formatElapsed(result.totalSeconds)}
+              {result.penaltySeconds > 0 &&
+                ` (varav ${formatElapsed(result.penaltySeconds)} tillägg)`}
+            </p>
+          )}
+          {!result && !allStepsDone && (
+            <p style={{ ...sharedStyles.guessResult, color: theme.textMuted }}>
+              Slutför eller hoppa över:{" "}
+              {remainingSteps.map((s) => s.label).join(", ")}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

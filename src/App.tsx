@@ -156,6 +156,17 @@ function AppShell() {
           .overview-sidenav::-webkit-scrollbar { display: none; }
           .overview-sidenav-list { flex-direction: row !important; }
           .game-timer { width: 92px !important; }
+          /* Kartan's location pills stay on the check circles' row and
+             scroll sideways, like the section nav. */
+          .citymap-header { flex-wrap: nowrap !important; }
+          .citymap-tabs {
+            flex: 1;
+            min-width: 0;
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+          .citymap-tabs::-webkit-scrollbar { display: none; }
           /* Nav jumps land below the top navbar plus the sticky row. */
           .app-pagewrap section[id],
           .app-pagewrap [data-scroll-target] {

@@ -43,8 +43,11 @@ export default function CityMap({
 
   return (
     <div>
-      <div style={{ ...sharedStyles.pillHeaderBase, justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
+      <div
+        className="citymap-header"
+        style={{ ...sharedStyles.pillHeaderBase, justifyContent: "space-between" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           {onToggleDone && (
             <button
               style={styles.titleCheckBtn}
@@ -61,7 +64,7 @@ export default function CityMap({
             </button>
           )}
         </div>
-        <div style={styles.tabs}>
+        <div className="citymap-tabs" style={styles.tabs}>
           {pins.map((p) => (
             <button
               key={p.id}
@@ -107,6 +110,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tabs: { display: "flex", gap: 6, flexWrap: "wrap" },
   tab: {
+    flexShrink: 0,
+    whiteSpace: "nowrap",
     background: "transparent",
     color: theme.textFaint,
     border: `1px solid ${theme.textFaint}`,
