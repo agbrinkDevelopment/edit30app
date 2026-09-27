@@ -502,7 +502,6 @@ export const styles: Record<string, React.CSSProperties> = {
   // Fixed size (the desktop side column's width) so the timer doesn't
   // shrink on narrow screens, where it shares a row with the section nav.
   gameStartBtn: {
-    width: 192,
     flexShrink: 0,
     boxSizing: "border-box",
     display: "flex",

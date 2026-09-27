@@ -15,7 +15,9 @@ import Navbar from "./components/Navbar";
 import InfoButton from "./components/InfoButton";
 import GameStartButton from "./components/GameStartButton";
 import GameInfoCard from "./components/GameInfoCard";
-import SideNavbar from "./components/SideNavbar";
+import SideNavbar, { SideNavItem } from "./components/SideNavbar";
+import { NAV_ITEMS } from "./shared/data";
+import { BookOpen, FileText, Newspaper } from "lucide-react";
 import { styles as sharedStyles } from "./shared/styles";
 import Overview from "./pages/Overview";
 import CharacterInvestigate from "./pages/CharacterInvestigate";
@@ -153,8 +155,12 @@ function AppShell() {
           }
           .overview-sidenav::-webkit-scrollbar { display: none; }
           .overview-sidenav-list { flex-direction: row !important; }
+          .game-timer { width: 92px !important; }
           /* Nav jumps land below the top navbar plus the sticky row. */
-          .app-pagewrap section[id] { scroll-margin-top: 124px !important; }
+          .app-pagewrap section[id],
+          .app-pagewrap [data-scroll-target] {
+            scroll-margin-top: 124px !important;
+          }
         }
         @media (max-width: 480px) {
           .app-pagewrap { padding: 0 16px 16px !important; gap: 20px !important; }
@@ -171,14 +177,29 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 }
 
 function AppLayout() {
-  const isOverview = useLocation().pathname === "/";
-  const notAdmin = useLocation().pathname !== "/admin";
+  const { pathname } = useLocation();
+  const { game } = useGame();
+  const isOverview = pathname === "/";
+  const isEvidence = pathname === "/evidence";
+  const notAdmin = pathname !== "/admin";
+
+  const victim = game.characters.find((c) => c.role === "victim");
+  const evidenceNavItems: SideNavItem[] = [
+    { id: "forhorsdokument", label: "Förhörsdokument", icon: FileText },
+    { id: "nyhetsartiklar", label: "Nyhetsartiklar", icon: Newspaper },
+    {
+      id: "anteckningar",
+      label: victim ? `${victim.name}s anteckningar` : "Offrets anteckningar",
+      icon: BookOpen,
+    },
+  ];
 
   return (
     <div className="app-pagewrap" style={sharedStyles.pageWrap}>
       <div className="app-side-left" style={sharedStyles.sideColumn}>
         {notAdmin && <GameStartButton />}
-        {isOverview && <SideNavbar />}
+        {isOverview && <SideNavbar items={NAV_ITEMS} lockUntilStarted />}
+        {isEvidence && <SideNavbar items={evidenceNavItems} />}
       </div>
 
       <div style={sharedStyles.page}>

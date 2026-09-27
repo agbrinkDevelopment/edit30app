@@ -22,7 +22,11 @@ export default function Evidence() {
 
   return (
     <div style={sharedStyles.pagePadded}>
-      <div style={sharedStyles.header}>
+      <div
+        id="forhorsdokument"
+        data-scroll-target
+        style={{ ...sharedStyles.header, scrollMarginTop: 72 }}
+      >
         <h2 style={sharedStyles.h1}>Förhörsdokument</h2>
       </div>
 
@@ -93,7 +97,11 @@ export default function Evidence() {
 
       <div style={styles.sectionDivider} />
 
-      <div style={sharedStyles.header}>
+      <div
+        id="nyhetsartiklar"
+        data-scroll-target
+        style={{ ...sharedStyles.header, scrollMarginTop: 72 }}
+      >
         <h2 style={sharedStyles.h1}>Nyhetsartiklar</h2>
       </div>
 
@@ -143,7 +151,11 @@ export default function Evidence() {
 
       <div style={styles.sectionDivider} />
 
-      <div style={sharedStyles.header}>
+      <div
+        id="anteckningar"
+        data-scroll-target
+        style={{ ...sharedStyles.header, scrollMarginTop: 72 }}
+      >
         <h2 style={sharedStyles.h1}>{victimNotesTitle}</h2>
       </div>
 

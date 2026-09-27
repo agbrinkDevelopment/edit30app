@@ -1,13 +1,29 @@
 import React, { useState } from "react";
-import { NAV_ITEMS } from "../shared/data";
+import { LucideIcon } from "lucide-react";
 import { styles as sharedStyles } from "../shared/styles";
 import { scrollToSection } from "../shared/helpers";
 import { useGameTimer } from "../context/GameTimerContext";
 import { theme } from "../theme";
 
-export default function SideNavbar() {
+export interface SideNavItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+// Jump links to sections of the current page (scrolls to the element with
+// the item's id). With lockUntilStarted, it's blurred and inert until the
+// game clock has been started, like the Overview content itself.
+export default function SideNavbar({
+  items,
+  lockUntilStarted = false,
+}: {
+  items: SideNavItem[];
+  lockUntilStarted?: boolean;
+}) {
   const [activeNavId, setActiveNavId] = useState<string | null>(null);
-  const { started } = useGameTimer();
+  const { started: gameStarted } = useGameTimer();
+  const started = !lockUntilStarted || gameStarted;
 
   return (
     <nav className="overview-sidenav" style={sharedStyles.sideNav}>
@@ -24,7 +40,7 @@ export default function SideNavbar() {
         }}
         aria-hidden={!started}
       >
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+        {items.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             className={`overview-sidenav-item ${id === activeNavId ? " active" : ""}`}

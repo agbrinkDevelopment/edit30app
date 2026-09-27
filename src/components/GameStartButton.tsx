@@ -17,7 +17,11 @@ export default function GameStartButton() {
 
   if (!started) {
     return (
-      <button style={sharedStyles.gameStartBtn} onClick={startGame}>
+      <button
+        className="game-timer"
+        style={sharedStyles.gameStartBtn}
+        onClick={startGame}
+      >
         <PlayCircle size={21} />
       </button>
     );
@@ -25,6 +29,7 @@ export default function GameStartButton() {
 
   return (
     <div
+      className="game-timer"
       style={sharedStyles.gameTimer}
       title={
         penalty > 0

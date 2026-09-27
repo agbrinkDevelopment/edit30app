@@ -26,9 +26,9 @@ export default function InfoButton() {
             <span style={styles.submenuItem}>Kontakt</span>
           </div>
           <p style={styles.text}>
-            Det här är exempeltext i informationsrutan. Här kan innehåll om
-            hur spelet fungerar, regler och annan hjälpsam information läggas
-            till senare.
+            Det här är exempeltext i informationsrutan. Här kan innehåll om hur
+            spelet fungerar, regler och annan hjälpsam information läggas till
+            senare.
           </p>
         </Modal>
       )}
@@ -39,8 +39,8 @@ export default function InfoButton() {
 const styles: Record<string, React.CSSProperties> = {
   fab: {
     position: "fixed",
-    bottom: 24,
-    right: 24,
+    bottom: 16,
+    right: 16,
     width: 52,
     height: 52,
     borderRadius: "50%",
