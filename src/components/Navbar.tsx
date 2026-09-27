@@ -115,6 +115,7 @@ export default function Navbar() {
           }
           .navbar-menu {
             display: none;
+            border-radius: 0px;
           }
           .navbar-menu.open {
             display: flex;
@@ -128,7 +129,6 @@ export default function Navbar() {
             border-radius: 0px 0px 0px 0px;
             background: ${theme.cardBg};
             border-bottom: 1px solid ${theme.cardBorder};
-            padding: 16px 24px;
             gap: 16px;
             z-index: 200;
           }
@@ -136,6 +136,7 @@ export default function Navbar() {
             flex-direction: column;
             align-items: flex-start;
             gap: 12px;
+            padding: 16px 24px;
           }
           .navbar-menu.open .navbar-right {
             flex-direction: row;
@@ -143,11 +144,10 @@ export default function Navbar() {
             align-items: center;
             width: 100%;
             margin-left: 0;
-            padding: 12px 24px;
-            border-radius: 12px 12px 12px 12px;
+            padding: 12px 18px;
             border-top: 1px solid ${theme.cardBorder};
+            border-bottom: 1px solid ${theme.textFaint};
             background: ${theme.cardBorder};
-            border-radius: 0 0 12px 12px;
           }
         }
       `}</style>
@@ -222,8 +222,9 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
+  // Borders only on mobile, where this becomes a strip in the open menu
+  // (see .navbar-menu.open .navbar-right above).
   right: {
-    borderRadius: 30,
     display: "flex",
     alignItems: "center",
     gap: 24,

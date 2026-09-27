@@ -16,9 +16,7 @@ export default function Evidence() {
   const visibleNewsArticles = game.newsArticles.filter((d) => d.revealed);
   const visibleVictimNotes = game.victimNotes.filter((d) => d.revealed);
   const victim = game.characters.find((c) => c.role === "victim");
-  const victimNotesTitle = victim
-    ? `${victim.name}s anteckningar`
-    : "Offrets anteckningar";
+  const victimNotesTitle = "Offrets anteckningar";
 
   return (
     <div style={sharedStyles.pagePadded}>
@@ -335,7 +333,7 @@ const styles: Record<string, React.CSSProperties> = {
   notesGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "26px 20px",
+    gap: "26px 30px",
   },
   // A little hardcover book: a ridged spine on the left, pages implied by a
   // stacked drop-shadow on the bottom-right, like folderWrap/newsStack.

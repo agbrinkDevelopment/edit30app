@@ -189,7 +189,7 @@ function AppLayout() {
     { id: "nyhetsartiklar", label: "Nyhetsartiklar", icon: Newspaper },
     {
       id: "anteckningar",
-      label: victim ? `${victim.name}s anteckningar` : "Offrets anteckningar",
+      label: "Offrets anteckningar",
       icon: BookOpen,
     },
   ];
