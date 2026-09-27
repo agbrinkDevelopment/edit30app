@@ -3,6 +3,7 @@ import { NAV_ITEMS } from "../shared/data";
 import { styles as sharedStyles } from "../shared/styles";
 import { scrollToSection } from "../shared/helpers";
 import { useGameTimer } from "../context/GameTimerContext";
+import { theme } from "../theme";
 
 export default function SideNavbar() {
   const [activeNavId, setActiveNavId] = useState<string | null>(null);
@@ -11,6 +12,7 @@ export default function SideNavbar() {
   return (
     <nav className="overview-sidenav" style={sharedStyles.sideNav}>
       <div
+        className="overview-sidenav-list"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -25,7 +27,7 @@ export default function SideNavbar() {
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            className={`overview-sidenav-item${id === activeNavId ? " active" : ""}`}
+            className={`overview-sidenav-item ${id === activeNavId ? " active" : ""}`}
             style={sharedStyles.sideNavItem}
             onClick={() => {
               setActiveNavId(id);

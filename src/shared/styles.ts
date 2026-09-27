@@ -26,7 +26,7 @@ export const styles: Record<string, React.CSSProperties> = {
     top: 72,
     display: "flex",
     flexDirection: "column",
-    gap: 8,
+    gap: 5,
     minWidth: 0,
   },
   sideNav: {
@@ -499,7 +499,12 @@ export const styles: Record<string, React.CSSProperties> = {
     color: theme.textMuted,
     lineHeight: 1.5,
   },
+  // Fixed size (the desktop side column's width) so the timer doesn't
+  // shrink on narrow screens, where it shares a row with the section nav.
   gameStartBtn: {
+    width: 110,
+    flexShrink: 0,
+    boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -513,6 +518,9 @@ export const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   gameTimer: {
+    width: 170,
+    flexShrink: 0,
+    boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",

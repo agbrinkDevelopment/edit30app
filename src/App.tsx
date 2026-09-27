@@ -127,13 +127,35 @@ function AppShell() {
         @media (max-width: 768px) {
           .app-pagewrap { grid-template-columns: 1fr !important; }
           .app-side-right { display: none !important; }
+          /* Timer + section nav become one row that sticks just under the
+             56px top navbar. The negative margins stretch its background to
+             the screen edges so content scrolling underneath is hidden. */
           .app-side-left {
-            position: static !important;
-            align-items: flex-start;
+            position: sticky !important;
+            top: 56px !important;
+            z-index: 50;
+            flex-direction: row !important;
+            align-items: center;
+            gap: 8px !important;
+            background: ${theme.bg};
+            margin: 0 -24px;
+            padding: 8px 24px;
+            border-bottom: 1px solid ${theme.textFaint}
           }
+          .overview-sidenav {
+            flex: 1;
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+          .overview-sidenav::-webkit-scrollbar { display: none; }
+          .overview-sidenav-list { flex-direction: row !important; }
+          /* Nav jumps land below the top navbar plus the sticky row. */
+          .app-pagewrap section[id] { scroll-margin-top: 124px !important; }
         }
         @media (max-width: 480px) {
           .app-pagewrap { padding: 16px !important; gap: 20px !important; }
+          .app-side-left { margin: 0 -16px; padding: 8px 16px; }
         }
       `}</style>
     </BrowserRouter>
