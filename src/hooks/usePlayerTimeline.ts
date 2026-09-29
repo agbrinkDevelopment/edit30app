@@ -19,8 +19,7 @@ export function usePlayerTimeline(playerId: string | undefined) {
       .getPlayerTimelineStatus(playerId)
       .then((s) => {
         setSolved(s.solved);
-        // Default to none: an older backend may not send this field yet.
-        setSolvedCharacterIds(s.solvedCharacterIds ?? []);
+        setSolvedCharacterIds(s.solvedCharacterIds);
       })
       .catch(() => undefined);
   }, [playerId]);
