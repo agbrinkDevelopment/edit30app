@@ -154,7 +154,9 @@ export const api = {
   deletePlayerTimelineEvent: (playerId: string, id: string) =>
     del(`/players/${playerId}/timeline-events/${id}`),
   getPlayerTimelineStatus: (playerId: string) =>
-    get<{ solved: boolean }>(`/players/${playerId}/timeline-status`),
+    get<{ solved: boolean; solvedCharacterIds: string[] }>(
+      `/players/${playerId}/timeline-status`,
+    ),
 
   getPlayerEvidence: (playerId: string) =>
     get<PlayerEvidence[]>(`/players/${playerId}/evidence`),

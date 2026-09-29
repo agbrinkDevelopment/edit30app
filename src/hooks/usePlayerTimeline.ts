@@ -9,13 +9,18 @@ import { PlayerTimelineEvent } from "../types";
 export function usePlayerTimeline(playerId: string | undefined) {
   const [events, setEvents] = useState<PlayerTimelineEvent[]>([]);
   const [solved, setSolved] = useState(false);
+  // Characters whose lane matches the real timeline.
+  const [solvedCharacterIds, setSolvedCharacterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!!playerId);
 
   const refreshStatus = useCallback(() => {
     if (!playerId) return;
     api
       .getPlayerTimelineStatus(playerId)
-      .then((s) => setSolved(s.solved))
+      .then((s) => {
+        setSolved(s.solved);
+        setSolvedCharacterIds(s.solvedCharacterIds);
+      })
       .catch(() => undefined);
   }, [playerId]);
 
@@ -23,6 +28,7 @@ export function usePlayerTimeline(playerId: string | undefined) {
     if (!playerId) {
       setEvents([]);
       setSolved(false);
+      setSolvedCharacterIds([]);
       setLoading(false);
       return;
     }
@@ -83,5 +89,13 @@ export function usePlayerTimeline(playerId: string | undefined) {
       .catch(() => undefined);
   };
 
-  return { events, solved, loading, addEvent, updateEvent, removeEvent };
+  return {
+    events,
+    solved,
+    solvedCharacterIds,
+    loading,
+    addEvent,
+    updateEvent,
+    removeEvent,
+  };
 }

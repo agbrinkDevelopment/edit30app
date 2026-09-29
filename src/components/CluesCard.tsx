@@ -65,7 +65,8 @@ export default function CluesCard({
       setDragOverBucket(bucketId);
     },
     onDragLeave: () => setDragOverBucket(null),
-    onDrop: (e: React.DragEvent<HTMLDivElement>) => handleBucketDrop(e, bucketId),
+    onDrop: (e: React.DragEvent<HTMLDivElement>) =>
+      handleBucketDrop(e, bucketId),
     onClick: () => handleBucketTap(bucketId),
   });
 
@@ -154,6 +155,22 @@ export default function CluesCard({
     );
   };
 
+  // The unassigned items. Last on desktop; first on mobile, so the items
+  // to tap are right under the instructions instead of below every bucket.
+  const poolBucket = (
+    <div
+      style={{ ...bucketStyle(POOL_ID), gridColumn: "1 / -1" }}
+      {...bucketProps(POOL_ID)}
+    >
+      <div style={sharedStyles.sortBucketHeader}>
+        <span style={sharedStyles.sortBucketName}>Ledtrådar</span>
+      </div>
+      <div style={sharedStyles.sortItemListRow}>
+        {game.clues.filter((item) => !assignments[item.id]).map(renderItem)}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ ...sharedStyles.card, position: "relative" }}>
       {isMobile && (
@@ -163,7 +180,10 @@ export default function CluesCard({
             : "Tryck på en ledtråd och sedan på den karaktär den tillhör."}
         </p>
       )}
-      <div style={sharedStyles.sortGrid}>
+      {isMobile && poolBucket}
+      <div
+        style={{ ...sharedStyles.sortGrid, marginBottom: 12, marginTop: 12 }}
+      >
         {detective && (
           <div style={sharedStyles.sortGrid}>{renderBucket(detective)}</div>
         )}
@@ -184,17 +204,7 @@ export default function CluesCard({
 
       <div style={sharedStyles.sortGrid}>
         {suspects.map(renderBucket)}
-        <div
-          style={{ ...bucketStyle(POOL_ID), gridColumn: "1 / -1" }}
-          {...bucketProps(POOL_ID)}
-        >
-          <div style={sharedStyles.sortBucketHeader}>
-            <span style={sharedStyles.sortBucketName}>Ledtrådar</span>
-          </div>
-          <div style={sharedStyles.sortItemListRow}>
-            {game.clues.filter((item) => !assignments[item.id]).map(renderItem)}
-          </div>
-        </div>
+        {!isMobile && poolBucket}
       </div>
     </div>
   );
@@ -208,7 +218,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: theme.accentBg,
   },
   mobileHelp: {
-    margin: "4px 0 12px",
+    margin: "4px 0 24px",
     // Clear of the status circles in the top-right corner.
     paddingRight: 72,
     fontSize: 13,

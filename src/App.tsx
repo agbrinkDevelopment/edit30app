@@ -126,7 +126,10 @@ function AppShell() {
       </div>
 
       <style>{`
+        .killer-photo-help { display: none; }
         @media (max-width: 768px) {
+          .killer-photo-help { display: block; }
+          .killer-remaining { display: none; }
           .app-pagewrap {
             grid-template-columns: 1fr !important;
             padding-top: 0 !important;

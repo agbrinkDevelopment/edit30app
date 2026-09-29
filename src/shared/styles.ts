@@ -63,12 +63,13 @@ export const styles: Record<string, React.CSSProperties> = {
   killerCard: {
     display: "flex",
     alignItems: "flex-start",
-    columnGap: 20,
+    columnGap: 14,
     flexWrap: "wrap",
     background: theme.cardBg,
     borderRadius: 12,
     padding: 8,
     marginBottom: 32,
+    paddingBottom: 12,
     border: `1px solid ${theme.textFaint}`,
   },
   killerPhotoWrap: {
@@ -230,7 +231,7 @@ export const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-    columnGap: 14,
+    columnGap: 12,
   },
   // Holds the Ledtrådar card's status circles in its top-right corner.
   ledtradarTabCircles: {
@@ -252,14 +253,29 @@ export const styles: Record<string, React.CSSProperties> = {
   sortGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-    gap: 16,
+    gap: 12,
   },
   sortBucket: {
     display: "flex",
     flexDirection: "column",
     gap: 10,
-    marginBottom: 14,
     minHeight: 160,
+    background: theme.inputBg,
+    // Longhands, not `border`: sortBucketOver overrides borderColor, and
+    // React warns when a shorthand and its longhands are mixed on rerender.
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: theme.inputBorder,
+    borderRadius: 12,
+    padding: 14,
+    transition: "border-color 0.15s, background 0.15s",
+  },
+  sortBucketDetective: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    minHeight: 160,
+    marginBottom: 14,
     background: theme.inputBg,
     // Longhands, not `border`: sortBucketOver overrides borderColor, and
     // React warns when a shorthand and its longhands are mixed on rerender.

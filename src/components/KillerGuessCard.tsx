@@ -94,7 +94,18 @@ export default function KillerGuessCard({
             <User size={56} color={theme.textFaint} />
           )
         ) : (
-          <HelpCircleIcon size={28} color={theme.textFaint} />
+          <div style={styles.photoPlaceholder}>
+            <HelpCircleIcon size={28} color={theme.textFaint} />
+            {/* Mobile only (see .killer-photo-help in App.tsx), where the
+                "Slutför eller hoppa över" line below is hidden instead. */}
+            {remainingSteps.length > 0 && (
+              <p className="killer-photo-help" style={styles.photoHelp}>
+                För att lösa mordmysteriet ska du slutföra eller hoppa över:{" "}
+                {remainingSteps.map((s) => s.label).join(", ")}. Sedan får du
+                möjligheten att utvärdera mordet.
+              </p>
+            )}
+          </div>
         )}
       </div>
 
@@ -217,7 +228,10 @@ export default function KillerGuessCard({
             </p>
           )}
           {!result && !allStepsDone && (
-            <p style={{ ...sharedStyles.guessResult, color: theme.textMuted }}>
+            <p
+              className="killer-remaining"
+              style={{ ...sharedStyles.guessResult, color: theme.textMuted }}
+            >
               Slutför eller hoppa över:{" "}
               {remainingSteps.map((s) => s.label).join(", ")}
             </p>
@@ -228,4 +242,19 @@ export default function KillerGuessCard({
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {};
+const styles: Record<string, React.CSSProperties> = {
+  photoPlaceholder: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    textAlign: "center",
+  },
+  photoHelp: {
+    margin: 0,
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: theme.textMuted,
+  },
+};

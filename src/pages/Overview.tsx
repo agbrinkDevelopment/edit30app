@@ -92,6 +92,7 @@ export default function Overview() {
         <CaseTimeline
           events={playerTimeline.events}
           solved={playerTimeline.solved}
+          solvedCharacterIds={playerTimeline.solvedCharacterIds}
           onAddEvent={playerTimeline.addEvent}
           onUpdateEvent={playerTimeline.updateEvent}
           onRemoveEvent={playerTimeline.removeEvent}

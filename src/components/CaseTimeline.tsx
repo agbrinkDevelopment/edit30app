@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Clock, Edit2, Plus, Trash2, User } from "lucide-react";
+import { Check, Clock, Edit2, Plus, Trash2, User } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import { PlayerTimelineEvent } from "../types";
 import { theme } from "../theme";
@@ -51,12 +51,15 @@ function computeLaneOrder(
 export default function CaseTimeline({
   events,
   solved,
+  solvedCharacterIds,
   onAddEvent,
   onUpdateEvent,
   onRemoveEvent,
 }: {
   events: PlayerTimelineEvent[];
   solved: boolean;
+  // Characters whose lane is complete; their avatar gets a check badge.
+  solvedCharacterIds: string[];
   onAddEvent: (e: Omit<PlayerTimelineEvent, "id">) => void;
   onUpdateEvent: (e: PlayerTimelineEvent) => void;
   onRemoveEvent: (id: string) => void;
@@ -242,15 +245,35 @@ export default function CaseTimeline({
                       borderBottomRightRadius: roundBottom ? 32 : 0,
                     }}
                   >
-                    <div style={styles.laneAvatar} title={c?.name}>
-                      {c?.imageUrl ? (
-                        <img
-                          src={fileSrc(c.imageUrl)}
-                          alt={c.name}
-                          style={sharedStyles.imgCover}
-                        />
-                      ) : (
-                        <User size={20} color={theme.textFaint} />
+                    {/* The avatar clips its image, so the badge sits on a
+                        wrapper around it instead. */}
+                    <div style={styles.laneAvatarWrap}>
+                      <div
+                        style={{
+                          ...styles.laneAvatar,
+                          ...(solvedCharacterIds.includes(id)
+                            ? { borderColor: theme.success }
+                            : {}),
+                        }}
+                        title={c?.name}
+                      >
+                        {c?.imageUrl ? (
+                          <img
+                            src={fileSrc(c.imageUrl)}
+                            alt={c.name}
+                            style={sharedStyles.imgCover}
+                          />
+                        ) : (
+                          <User size={20} color={theme.textFaint} />
+                        )}
+                      </div>
+                      {solvedCharacterIds.includes(id) && (
+                        <span
+                          style={styles.laneAvatarCheck}
+                          title="Tidslinjen för den här karaktären stämmer"
+                        >
+                          <Check size={9} color={theme.primaryText} />
+                        </span>
                       )}
                     </div>
                   </div>
@@ -507,13 +530,33 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     background: "#fff",
   },
+  laneAvatarWrap: {
+    position: "relative",
+    flexShrink: 0,
+  },
+  laneAvatarCheck: {
+    position: "absolute",
+    top: -3,
+    right: -5,
+    width: 16,
+    height: 16,
+    borderRadius: "50%",
+    background: theme.success,
+    border: `1.5px solid ${theme.cardBg}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   laneAvatar: {
     width: 40,
     height: 40,
     borderRadius: "50%",
     background: theme.inputBg,
     marginLeft: 6,
-    border: `1px solid ${theme.inputBorder}`,
+    // Longhands: borderColor turns green when the lane is complete.
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: theme.inputBorder,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
