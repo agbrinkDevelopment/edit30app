@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { styles as sharedStyles } from "../shared/styles";
 import { useGame } from "../context/GameContext";
-import { AlertTriangle, ChevronDown, HelpCircleIcon, User } from "lucide-react";
-import { formatElapsed } from "../shared/helpers";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ChevronDown,
+  HelpCircleIcon,
+  Info,
+  User,
+} from "lucide-react";
+import { formatElapsed, scrollToSection } from "../shared/helpers";
 import { usePlayerSections } from "../context/PlayerSectionsContext";
 import { theme } from "../theme";
 import SectionCheckCircle from "./SectionCheckCircle";
@@ -95,15 +102,34 @@ export default function KillerGuessCard({
           )
         ) : (
           <div style={styles.photoPlaceholder}>
-            <HelpCircleIcon size={28} color={theme.textFaint} />
             {/* Mobile only (see .killer-photo-help in App.tsx), where the
                 "Slutför eller hoppa över" line below is hidden instead. */}
             {remainingSteps.length > 0 && (
-              <p className="killer-photo-help" style={styles.photoHelp}>
-                För att lösa mordmysteriet ska du slutföra eller hoppa över:{" "}
-                {remainingSteps.map((s) => s.label).join(", ")}. Sedan får du
-                möjligheten att utvärdera mordet.
-              </p>
+              <div className="killer-photo-help">
+                <div style={styles.photoHelpRow}>
+                  <Info
+                    size={18}
+                    color={theme.textFaint}
+                    style={styles.photoHelpIcon}
+                  />
+                  <p style={styles.photoHelp}>
+                    För att lösa mordmysteriet ska du slutföra eller hoppa över:{" "}
+                    {remainingSteps.map((s) => s.label).join(", ")}. Sedan får
+                    du möjligheten att utvärdera mordet.
+                  </p>
+                </div>
+                {/* Nudges the player down to the sections; tapping it jumps
+                    to the first one still left. */}
+                <button
+                  type="button"
+                  className="scroll-down-arrow"
+                  style={styles.scrollArrow}
+                  onClick={() => scrollToSection(remainingSteps[0].id)}
+                  aria-label="Scrolla ner"
+                >
+                  <ArrowDown size={22} color={theme.textFaint} />
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -248,9 +274,29 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     alignItems: "center",
     gap: 12,
-    padding: 16,
+    padding: 36,
     textAlign: "center",
   },
+  scrollArrow: {
+    marginTop: 44,
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    border: `1px solid ${theme.textFaint}`,
+    background: "transparent",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
+  photoHelpRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 8,
+    textAlign: "left",
+  },
+  // Nudged down to line up with the first line of text.
+  photoHelpIcon: { flexShrink: 0, marginTop: 2 },
   photoHelp: {
     margin: 0,
     fontSize: 14,

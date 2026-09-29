@@ -127,6 +127,14 @@ function AppShell() {
 
       <style>{`
         .killer-photo-help { display: none; }
+        .scroll-down-arrow { animation: scroll-down-bounce 1.6s ease-in-out infinite; }
+        @keyframes scroll-down-bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(6px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-down-arrow { animation: none; }
+        }
         @media (max-width: 768px) {
           .killer-photo-help { display: block; }
           .killer-remaining { display: none; }
