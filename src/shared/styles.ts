@@ -63,7 +63,7 @@ export const styles: Record<string, React.CSSProperties> = {
   killerCard: {
     display: "flex",
     alignItems: "flex-start",
-    gap: 12,
+    columnGap: 20,
     flexWrap: "wrap",
     background: theme.cardBg,
     borderRadius: 12,
@@ -128,8 +128,8 @@ export const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 6,
-    paddingBottom: 4,
-    paddingTop: 14,
+    paddingBottom: 0,
+    paddingTop: 8,
     flexWrap: "wrap",
   },
   // Stretches so the picker + "Utvärdera" fill the row.
@@ -211,7 +211,7 @@ export const styles: Record<string, React.CSSProperties> = {
     borderRadius: 20,
     padding: "8px 14px",
     fontWeight: 700,
-    fontSize: 15,
+    fontSize: 12,
     cursor: "pointer",
   },
   guessResult: {

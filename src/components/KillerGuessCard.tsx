@@ -49,7 +49,7 @@ export default function KillerGuessCard({
             particleCount: 240,
             spread: 120,
             startVelocity: 50,
-            origin: { y: 1 },
+            origin: { y: 1.2 },
             disableForReducedMotion: true,
           });
         }
@@ -63,8 +63,9 @@ export default function KillerGuessCard({
   };
 
   return (
-    <div style={sharedStyles.killerCard}>
+    <div className="killer-card" style={sharedStyles.killerCard}>
       <div
+        className="killer-photo"
         style={{
           ...sharedStyles.killerPhotoWrap,
           ...(guessResult === "wrong" ? sharedStyles.killerPhotoWrapWrong : {}),
@@ -121,7 +122,7 @@ export default function KillerGuessCard({
             </div>
           ))}
         </div>
-        <div style={sharedStyles.guessRow}>
+        <div className="killer-guess-row" style={sharedStyles.guessRow}>
           <div
             style={{
               ...sharedStyles.guessDropdownWrap,
@@ -199,7 +200,7 @@ export default function KillerGuessCard({
             Utvärdera
           </button>
         </div>
-        <div style={{ paddingBottom: 4 }}>
+        <div className="killer-guess-msg" style={{ paddingBottom: 4 }}>
           {result && (
             <p
               style={{

@@ -6,10 +6,16 @@ import SectionCheckCircle from "./SectionCheckCircle";
 import { styles as sharedStyles } from "../shared/styles";
 import { POOL_ID } from "../shared/data";
 import { fileSrc } from "../api/client";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { Character, Clue } from "../types";
 
-// Players drag each clue (item) onto the character they think it belongs to.
+// Players sort each clue (item) onto the character they think it belongs to.
 // The mapping lives in player_clues and is checked against the real owners
 // server-side — see usePlayerClue.
+//
+// Desktop: drag and drop. Mobile: HTML5 drag and drop doesn't fire on touch
+// screens, so there it's tap an item to pick it up, then tap the character
+// (or the Ledtrådar pool) to put it down; tapping the item again cancels.
 export default function CluesCard({
   assignments,
   solved,
@@ -22,30 +28,20 @@ export default function CluesCard({
   onAssign: (clueId: string, characterId: string | null) => void;
 }) {
   const { game } = useGame();
+  const isMobile = useIsMobile();
   const detective = game.characters.find((c) => c.role === "detective");
   const suspects = game.characters.filter((c) => c.role === "suspect");
 
   const [dragOverBucket, setDragOverBucket] = useState<string | null>(null);
+  // Mobile only: the item picked up by a tap, waiting for a bucket tap.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedItem = game.clues.find((c) => c.id === selectedId);
 
   const itemsIn = (characterId: string) =>
     game.clues.filter((item) => assignments[item.id] === characterId);
-  const isBucketSolved = (characterId: string) =>
-    solvedCharacterIds.includes(characterId);
 
-  const handleItemDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    itemId: string,
-  ) => {
-    e.dataTransfer.setData("text/plain", itemId);
-  };
-
-  const handleBucketDragOver = (
-    e: React.DragEvent<HTMLDivElement>,
-    bucketId: string,
-  ) => {
-    e.preventDefault();
-    setDragOverBucket(bucketId);
-  };
+  const assignTo = (itemId: string, bucketId: string) =>
+    onAssign(itemId, bucketId === POOL_ID ? null : bucketId);
 
   const handleBucketDrop = (
     e: React.DragEvent<HTMLDivElement>,
@@ -53,90 +49,124 @@ export default function CluesCard({
   ) => {
     e.preventDefault();
     const itemId = e.dataTransfer.getData("text/plain");
-    if (itemId) onAssign(itemId, bucketId === POOL_ID ? null : bucketId);
+    if (itemId) assignTo(itemId, bucketId);
     setDragOverBucket(null);
+  };
+
+  const handleBucketTap = (bucketId: string) => {
+    if (!isMobile || !selectedId) return;
+    assignTo(selectedId, bucketId);
+    setSelectedId(null);
+  };
+
+  const bucketProps = (bucketId: string) => ({
+    onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragOverBucket(bucketId);
+    },
+    onDragLeave: () => setDragOverBucket(null),
+    onDrop: (e: React.DragEvent<HTMLDivElement>) => handleBucketDrop(e, bucketId),
+    onClick: () => handleBucketTap(bucketId),
+  });
+
+  // Highlighted while dragged over, or on mobile while an item is picked up
+  // (every bucket is then a place it can go).
+  const bucketStyle = (bucketId: string): React.CSSProperties => ({
+    ...sharedStyles.sortBucket,
+    ...(dragOverBucket === bucketId || (isMobile && selectedId)
+      ? sharedStyles.sortBucketOver
+      : {}),
+    ...(isMobile && selectedId ? { cursor: "pointer" } : {}),
+  });
+
+  const renderItem = (item: Clue) => {
+    const selected = isMobile && item.id === selectedId;
+    return (
+      <div
+        key={item.id}
+        draggable={!isMobile}
+        onDragStart={(e) => e.dataTransfer.setData("text/plain", item.id)}
+        onClick={(e) => {
+          if (!isMobile) return;
+          // Don't let the tap also count as a tap on the surrounding bucket.
+          e.stopPropagation();
+          setSelectedId(selected ? null : item.id);
+        }}
+        style={{
+          ...sharedStyles.sortItem,
+          ...(isMobile ? { cursor: "pointer" } : {}),
+          ...(selected ? styles.sortItemSelected : {}),
+        }}
+      >
+        <div style={sharedStyles.sortItemImage}>
+          {item.imageUrl ? (
+            <img
+              src={fileSrc(item.imageUrl)}
+              alt={item.title}
+              style={sharedStyles.sortItemImageImg}
+            />
+          ) : (
+            <ImageIcon size={16} color={theme.textFaint} />
+          )}
+        </div>
+        <span style={sharedStyles.sortItemTitle}>{item.title}</span>
+      </div>
+    );
+  };
+
+  const renderBucket = (c: Character) => {
+    const bucketSolved = solvedCharacterIds.includes(c.id);
+    return (
+      <div key={c.id} style={bucketStyle(c.id)} {...bucketProps(c.id)}>
+        <div style={sharedStyles.sortBucketHeader}>
+          <div style={sharedStyles.sortBucketHeaderLeft}>
+            <div style={sharedStyles.sortBucketAvatar}>
+              {c.imageUrl ? (
+                <img
+                  src={fileSrc(c.imageUrl)}
+                  alt={c.name}
+                  style={sharedStyles.sortBucketAvatarImg}
+                />
+              ) : (
+                <User size={18} color={theme.textFaint} />
+              )}
+            </div>
+            <span style={sharedStyles.sortBucketName}>{c.name}</span>
+          </div>
+          <span
+            style={{
+              ...sharedStyles.subCheckCircle,
+              ...(bucketSolved ? sharedStyles.subCheckCircleDone : {}),
+            }}
+            title={
+              bucketSolved
+                ? "Rätt ledtrådar tilldelade"
+                : "Inte rätt ledtrådar tilldelade än"
+            }
+          >
+            {bucketSolved && <Check size={10} color={theme.primaryText} />}
+          </span>
+        </div>
+        <div style={sharedStyles.sortItemList}>
+          {itemsIn(c.id).map(renderItem)}
+        </div>
+      </div>
+    );
   };
 
   return (
     <div style={{ ...sharedStyles.card, position: "relative" }}>
+      {isMobile && (
+        <p style={styles.mobileHelp}>
+          {selectedItem
+            ? `Tryck på den karaktär som ${selectedItem.title} tillhör.`
+            : "Tryck på en ledtråd och sedan på den karaktär den tillhör."}
+        </p>
+      )}
       <div style={sharedStyles.sortGrid}>
-        {detective &&
-          (() => {
-            const detectiveItems = itemsIn(detective.id);
-            const detectiveSolved = isBucketSolved(detective.id);
-            return (
-              <div style={sharedStyles.sortGrid}>
-                <div
-                  style={{
-                    ...sharedStyles.sortBucket,
-                    ...(dragOverBucket === detective.id
-                      ? sharedStyles.sortBucketOver
-                      : {}),
-                  }}
-                  onDragOver={(e) => handleBucketDragOver(e, detective.id)}
-                  onDragLeave={() => setDragOverBucket(null)}
-                  onDrop={(e) => handleBucketDrop(e, detective.id)}
-                >
-                  <div style={sharedStyles.sortBucketHeader}>
-                    <div style={sharedStyles.sortBucketHeaderLeft}>
-                      <div style={sharedStyles.sortBucketAvatar}>
-                        {detective.imageUrl ? (
-                          <img
-                            src={fileSrc(detective.imageUrl)}
-                            alt={detective.name}
-                            style={sharedStyles.sortBucketAvatarImg}
-                          />
-                        ) : (
-                          <User size={18} color={theme.textFaint} />
-                        )}
-                      </div>
-                      <span style={sharedStyles.sortBucketName}>
-                        {detective.name}
-                      </span>
-                    </div>
-                    <span
-                      style={{
-                        ...sharedStyles.subCheckCircle,
-                        ...(detectiveSolved ? sharedStyles.subCheckCircleDone : {}),
-                      }}
-                      title={
-                        detectiveSolved
-                          ? "Rätt ledtrådar tilldelade"
-                          : "Inte rätt ledtrådar tilldelade än"
-                      }
-                    >
-                      {detectiveSolved && (
-                        <Check size={10} color={theme.primaryText} />
-                      )}
-                    </span>
-                  </div>
-                  <div style={sharedStyles.sortItemList}>
-                    {detectiveItems.map((item) => (
-                      <div
-                        key={item.id}
-                        draggable
-                        onDragStart={(e) => handleItemDragStart(e, item.id)}
-                        style={sharedStyles.sortItem}
-                      >
-                        <div style={sharedStyles.sortItemImage}>
-                          {item.imageUrl ? (
-                            <img
-                              src={fileSrc(item.imageUrl)}
-                              alt={item.title}
-                              style={sharedStyles.sortItemImageImg}
-                            />
-                          ) : (
-                            <ImageIcon size={16} color={theme.textFaint} />
-                          )}
-                        </div>
-                        <span style={sharedStyles.sortItemTitle}>{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+        {detective && (
+          <div style={sharedStyles.sortGrid}>{renderBucket(detective)}</div>
+        )}
       </div>
       <SectionCheckCircle
         sectionId="ledtradar"
@@ -153,114 +183,16 @@ export default function CluesCard({
       />
 
       <div style={sharedStyles.sortGrid}>
-        {suspects.map((c) => {
-          const items = itemsIn(c.id);
-          const bucketSolved = isBucketSolved(c.id);
-          return (
-            <div
-              key={c.id}
-              style={{
-                ...sharedStyles.sortBucket,
-                ...(dragOverBucket === c.id ? sharedStyles.sortBucketOver : {}),
-              }}
-              onDragOver={(e) => handleBucketDragOver(e, c.id)}
-              onDragLeave={() => setDragOverBucket(null)}
-              onDrop={(e) => handleBucketDrop(e, c.id)}
-            >
-              <div style={sharedStyles.sortBucketHeader}>
-                <div style={sharedStyles.sortBucketHeaderLeft}>
-                  <div style={sharedStyles.sortBucketAvatar}>
-                    {c.imageUrl ? (
-                      <img
-                        src={fileSrc(c.imageUrl)}
-                        alt={c.name}
-                        style={sharedStyles.sortBucketAvatarImg}
-                      />
-                    ) : (
-                      <User size={18} color={theme.textFaint} />
-                    )}
-                  </div>
-                  <span style={sharedStyles.sortBucketName}>{c.name}</span>
-                </div>
-                <span
-                  style={{
-                    ...sharedStyles.subCheckCircle,
-                    ...(bucketSolved ? sharedStyles.subCheckCircleDone : {}),
-                  }}
-                  title={
-                    bucketSolved
-                      ? "Rätt ledtrådar tilldelade"
-                      : "Inte rätt ledtrådar tilldelade än"
-                  }
-                >
-                  {bucketSolved && (
-                    <Check size={10} color={theme.primaryText} />
-                  )}
-                </span>
-              </div>
-              <div style={sharedStyles.sortItemList}>
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    draggable
-                    onDragStart={(e) => handleItemDragStart(e, item.id)}
-                    style={sharedStyles.sortItem}
-                  >
-                    <div style={sharedStyles.sortItemImage}>
-                      {item.imageUrl ? (
-                        <img
-                          src={fileSrc(item.imageUrl)}
-                          alt={item.title}
-                          style={sharedStyles.sortItemImageImg}
-                        />
-                      ) : (
-                        <ImageIcon size={16} color={theme.textFaint} />
-                      )}
-                    </div>
-                    <span style={sharedStyles.sortItemTitle}>{item.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {suspects.map(renderBucket)}
         <div
-          style={{
-            ...sharedStyles.sortBucket,
-            gridColumn: "1 / -1",
-            ...(dragOverBucket === POOL_ID ? sharedStyles.sortBucketOver : {}),
-          }}
-          onDragOver={(e) => handleBucketDragOver(e, POOL_ID)}
-          onDragLeave={() => setDragOverBucket(null)}
-          onDrop={(e) => handleBucketDrop(e, POOL_ID)}
+          style={{ ...bucketStyle(POOL_ID), gridColumn: "1 / -1" }}
+          {...bucketProps(POOL_ID)}
         >
           <div style={sharedStyles.sortBucketHeader}>
             <span style={sharedStyles.sortBucketName}>Ledtrådar</span>
           </div>
           <div style={sharedStyles.sortItemListRow}>
-            {game.clues
-              .filter((item) => !assignments[item.id])
-              .map((item) => (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={(e) => handleItemDragStart(e, item.id)}
-                style={sharedStyles.sortItem}
-              >
-                <div style={sharedStyles.sortItemImage}>
-                  {item.imageUrl ? (
-                    <img
-                      src={fileSrc(item.imageUrl)}
-                      alt={item.title}
-                      style={sharedStyles.sortItemImageImg}
-                    />
-                  ) : (
-                    <ImageIcon size={16} color={theme.textFaint} />
-                  )}
-                </div>
-                <span style={sharedStyles.sortItemTitle}>{item.title}</span>
-              </div>
-            ))}
+            {game.clues.filter((item) => !assignments[item.id]).map(renderItem)}
           </div>
         </div>
       </div>
@@ -268,4 +200,18 @@ export default function CluesCard({
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {};
+const styles: Record<string, React.CSSProperties> = {
+  // A ring rather than a border change, so the item doesn't shift in size
+  // (and sortItem's `border` shorthand isn't mixed with a longhand).
+  sortItemSelected: {
+    boxShadow: `0 0 0 2px ${theme.textFaint}`,
+    background: theme.accentBg,
+  },
+  mobileHelp: {
+    margin: "4px 0 12px",
+    // Clear of the status circles in the top-right corner.
+    paddingRight: 72,
+    fontSize: 13,
+    color: theme.textMuted,
+  },
+};

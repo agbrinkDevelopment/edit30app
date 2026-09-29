@@ -159,6 +159,20 @@ function AppShell() {
           /* Kartan's location pills stay on the check circles' row and
              scroll sideways, like the section nav. */
           .citymap-header { flex-wrap: nowrap !important; }
+          /* Mördaren card: photo full width on top, then the suspect picker
+             + Utvärdera (and its message), then the checklist. */
+          .killer-card {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0 !important;
+          }
+          .killer-photo {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+          }
+          .killer-guess-row, .killer-guess-msg { order: -1; }
           .citymap-tabs {
             flex: 1;
             min-width: 0;
