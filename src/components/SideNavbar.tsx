@@ -11,6 +11,23 @@ export interface SideNavItem {
   icon: LucideIcon;
 }
 
+// On mobile the nav is one horizontally scrolling row (see App.tsx); bring
+// the tapped button to its left edge. Sets the row's own scroll position
+// rather than using scrollIntoView, which would also scroll the page and
+// fight the smooth scroll to the section. A no-op on desktop, where the
+// column doesn't scroll sideways.
+function alignLeftInNav(button: HTMLElement) {
+  const nav = button.closest<HTMLElement>(".overview-sidenav");
+  if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+  // Keep the row's left border and padding showing before the button.
+  const inset = nav.clientLeft + parseFloat(getComputedStyle(nav).paddingLeft);
+  const offset =
+    button.getBoundingClientRect().left -
+    nav.getBoundingClientRect().left -
+    inset;
+  nav.scrollTo({ left: nav.scrollLeft + offset, behavior: "smooth" });
+}
+
 // Jump links to sections of the current page (scrolls to the element with
 // the item's id). With lockUntilStarted, it's blurred and inert until the
 // game clock has been started, like the Overview content itself.
@@ -45,9 +62,10 @@ export default function SideNavbar({
             key={id}
             className={`overview-sidenav-item ${id === activeNavId ? " active" : ""}`}
             style={sharedStyles.sideNavItem}
-            onClick={() => {
+            onClick={(e) => {
               setActiveNavId(id);
               scrollToSection(id);
+              alignLeftInNav(e.currentTarget);
             }}
           >
             <Icon size={15} />
