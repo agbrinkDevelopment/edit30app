@@ -5,7 +5,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ChevronDown,
-  HelpCircleIcon,
+  ChevronRight,
   Info,
   User,
 } from "lucide-react";
@@ -113,9 +113,11 @@ export default function KillerGuessCard({
                     style={styles.photoHelpIcon}
                   />
                   <p style={styles.photoHelp}>
-                    För att lösa mordmysteriet ska du slutföra eller hoppa över:{" "}
-                    {remainingSteps.map((s) => s.label).join(", ")}. Sedan får
-                    du möjligheten att utvärdera mordet.
+                    Innan du kan lösa detta{" "}
+                    <span style={styles.mysteryWord}>mordmysterium</span>{" "}
+                    behöver du gå igenom:{" "}
+                    {remainingSteps.map((s) => s.label).join(", ")}. Slutför
+                    varje del eller hoppa över den – peka sedan ut mördaren.
                   </p>
                 </div>
                 {/* Nudges the player down to the sections; tapping it jumps
@@ -149,13 +151,24 @@ export default function KillerGuessCard({
                 {step.label}
               </div>
 
-              <SectionCheckCircle
-                sectionId={step.id}
-                done={step.done}
-                baseStyle={sharedStyles.checkCircle}
-                doneStyle={sharedStyles.checkCircleDone}
-                iconSize={12}
-              />
+              <div style={styles.stepRow}>
+                <SectionCheckCircle
+                  sectionId={step.id}
+                  done={step.done}
+                  baseStyle={sharedStyles.checkCircle}
+                  doneStyle={sharedStyles.checkCircleDone}
+                  iconSize={12}
+                />
+                <button
+                  type="button"
+                  style={styles.stepLink}
+                  onClick={() => scrollToSection(step.id)}
+                  title={`Gå till ${step.label}`}
+                  aria-label={`Gå till ${step.label}`}
+                >
+                  <ChevronRight size={18} color={theme.textFaint} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -234,7 +247,7 @@ export default function KillerGuessCard({
             disabled={!canGuess || !guessId}
             onClick={evaluate}
           >
-            Utvärdera
+            Peka ut
           </button>
         </div>
         <div className="killer-guess-msg" style={{ paddingBottom: 4 }}>
@@ -288,6 +301,28 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
+  },
+  // A checklist row's status circles on the left, its "go to" chevron on
+  // the right.
+  stepRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  stepLink: {
+    background: "none",
+    border: "none",
+    padding: 4,
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+  },
+  // Same font and colour as the "Mordmysterium" logo in the navbar.
+  mysteryWord: {
+    fontFamily: theme.fontAccent,
+    color: theme.primary,
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
   photoHelpRow: {
     display: "flex",
