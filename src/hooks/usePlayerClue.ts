@@ -64,9 +64,7 @@ export function usePlayerClue(playerId: string | undefined) {
     api
       .setPlayerClue(playerId, clueId, characterId)
       .then(() => refreshStatus())
-      .catch(() =>
-        setAssignments((prev) => ({ ...prev, [clueId]: previous })),
-      );
+      .catch(() => setAssignments((prev) => ({ ...prev, [clueId]: previous })));
   };
 
   return { assignments, solved, solvedCharacterIds, loading, assign };

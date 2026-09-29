@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
+  Pointer,
   User,
 } from "lucide-react";
 import { formatElapsed, scrollToSection } from "../shared/helpers";
@@ -241,12 +242,14 @@ export default function KillerGuessCard({
           <button
             style={{
               ...sharedStyles.guessBtn,
+              ...styles.guessBtnContent,
               opacity: canGuess && guessId ? 1 : 0.5,
               cursor: canGuess && guessId ? "pointer" : "not-allowed",
             }}
             disabled={!canGuess || !guessId}
             onClick={evaluate}
           >
+            <Pointer size={16} />
             Peka ut
           </button>
         </div>
@@ -316,6 +319,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     cursor: "pointer",
+  },
+  // Pointing hand next to the "Peka ut" label.
+  guessBtnContent: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
   },
   // Same font and colour as the "Mordmysterium" logo in the navbar.
   mysteryWord: {
