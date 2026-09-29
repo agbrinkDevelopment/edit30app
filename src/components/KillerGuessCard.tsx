@@ -6,7 +6,7 @@ import {
   ArrowDown,
   ChevronDown,
   ChevronRight,
-  Info,
+  HelpCircleIcon,
   Pointer,
   User,
 } from "lucide-react";
@@ -103,6 +103,13 @@ export default function KillerGuessCard({
           )
         ) : (
           <div style={styles.photoPlaceholder}>
+            {/* Desktop only; hidden on mobile, where the text below takes
+                its place (see .killer-photo-question in App.tsx). */}
+            <HelpCircleIcon
+              className="killer-photo-question"
+              size={28}
+              color={theme.textFaint}
+            />
             {/* Mobile only (see .killer-photo-help in App.tsx), where the
                 "Slutför eller hoppa över" line below is hidden instead. */}
             {remainingSteps.length > 0 && (

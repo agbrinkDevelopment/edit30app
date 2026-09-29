@@ -137,6 +137,7 @@ function AppShell() {
         }
         @media (max-width: 768px) {
           .killer-photo-help { display: block; }
+          .killer-photo-question { display: none; }
           .killer-remaining { display: none; }
           .app-pagewrap {
             grid-template-columns: 1fr !important;
