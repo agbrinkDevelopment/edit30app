@@ -10,6 +10,7 @@ import CityMap from "../components/CityMap";
 import { isCharacterInvestigated, loadProgress } from "../shared/helpers";
 import { MYSTERY_SECTIONS, PROGRESS_KEY } from "../shared/data";
 import SectionHelp from "../components/SectionHelp";
+import { usePlayerSections } from "../context/PlayerSectionsContext";
 import SpotlightCard from "../components/SpotlightCard";
 import Section from "../components/Section";
 import KillerGuessCard from "../components/KillerGuessCard";
@@ -21,6 +22,7 @@ export default function Overview() {
   const { game } = useGame();
   const { started } = useGameTimer();
   const { playerId } = useAuth();
+  const { sections: playerSections } = usePlayerSections();
   const playerTimeline = usePlayerTimeline(playerId);
   const playerClue = usePlayerClue(playerId);
   /* const playerEvidence = usePlayerEvidence(playerId); */
@@ -61,6 +63,10 @@ export default function Overview() {
     vittnen: witnesses.every((c) => isCharacterInvestigated(c.id, progress)),
   };
 
+  // A finished or skipped section is locked: nothing more can be done in it.
+  const isLocked = (id: string) =>
+    sectionDone[id] || !!playerSections[id]?.skipped;
+
   return (
     <div
       style={{
@@ -80,15 +86,24 @@ export default function Overview() {
         />
       </Section>
 
-      <Section id="kartan" title="Kartan">
+      <Section
+        id="kartan"
+        title="Kartan"
+        locked={isLocked("kartan")}
+        footer={<SectionHelp sectionId="kartan" done={sectionDone.kartan} />}
+      >
         <CityMap
           done={!!progress["kartan"]}
           onToggleDone={() => toggleStep("kartan")}
         />
-        <SectionHelp sectionId="kartan" done={sectionDone.kartan} />
       </Section>
 
-      <Section id="tidslinje" title="Tidslinje">
+      <Section
+        id="tidslinje"
+        title="Tidslinje"
+        locked={isLocked("tidslinje")}
+        footer={<SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />}
+      >
         <CaseTimeline
           events={playerTimeline.events}
           solved={playerTimeline.solved}
@@ -97,21 +112,29 @@ export default function Overview() {
           onUpdateEvent={playerTimeline.updateEvent}
           onRemoveEvent={playerTimeline.removeEvent}
         />
-        <SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />
       </Section>
 
-      <Section id="ledtradar" title="Ledtrådar">
+      <Section
+        id="ledtradar"
+        title="Ledtrådar"
+        locked={isLocked("ledtradar")}
+        footer={<SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />}
+      >
         <CluesCard
           assignments={playerClue.assignments}
           solved={playerClue.solved}
           solvedCharacterIds={playerClue.solvedCharacterIds}
           onAssign={playerClue.assign}
         />
-        <SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />
       </Section>
 
       {detective && (
-        <Section id="detektiven" title="Detektiven">
+        <Section
+          id="detektiven"
+          title="Detektiven"
+          locked={isLocked("detektiven")}
+          footer={<SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />}
+        >
           <SpotlightCard
             character={detective}
             sectionId="detektiven"
@@ -119,12 +142,16 @@ export default function Overview() {
             progress={progress}
             onToggleDone={toggleStep}
           />
-          <SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />
         </Section>
       )}
 
       {victim && (
-        <Section id="offret" title="Offret">
+        <Section
+          id="offret"
+          title="Offret"
+          locked={isLocked("offret")}
+          footer={<SectionHelp sectionId="offret" done={sectionDone.offret} />}
+        >
           <SpotlightCard
             character={victim}
             sectionId="offret"
@@ -132,12 +159,16 @@ export default function Overview() {
             progress={progress}
             onToggleDone={toggleStep}
           />
-          <SectionHelp sectionId="offret" done={sectionDone.offret} />
         </Section>
       )}
 
       {suspects.length > 0 && (
-        <Section id="de-misstankta" title="De misstänkta">
+        <Section
+          id="de-misstankta"
+          title="De misstänkta"
+          locked={isLocked("de-misstankta")}
+          footer={<SectionHelp sectionId="de-misstankta" done={sectionDone["de-misstankta"]} />}
+        >
           <CharacterGrid
             characters={suspects}
             sectionId="de-misstankta"
@@ -145,15 +176,16 @@ export default function Overview() {
             progress={progress}
             onToggleDone={toggleStep}
           />
-          <SectionHelp
-            sectionId="de-misstankta"
-            done={sectionDone["de-misstankta"]}
-          />
         </Section>
       )}
 
       {witnesses.length > 0 && (
-        <Section id="vittnen" title="Vittnen">
+        <Section
+          id="vittnen"
+          title="Vittnen"
+          locked={isLocked("vittnen")}
+          footer={<SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />}
+        >
           <CharacterGrid
             characters={witnesses}
             sectionId="vittnen"
@@ -161,7 +193,6 @@ export default function Overview() {
             progress={progress}
             onToggleDone={toggleStep}
           />
-          <SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />
         </Section>
       )}
     </div>

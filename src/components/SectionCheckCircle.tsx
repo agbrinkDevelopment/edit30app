@@ -34,7 +34,10 @@ export default function SectionCheckCircle({
   const skipped = !!section?.skipped;
 
   return (
-    <span style={{ ...styles.wrapper, ...wrapperStyle }}>
+    <span
+      className="section-check"
+      style={{ ...styles.wrapper, ...wrapperStyle }}
+    >
       <span
         style={{
           ...baseStyle,

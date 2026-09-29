@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -48,6 +48,11 @@ export default function App() {
     } catch (err) {
       console.error("Could not register player:", err);
     }
+    // Always land on the start page after signing in, not on whatever page
+    // the URL was left at (e.g. /admin from the previous sign-out). The
+    // router isn't mounted yet, so set the URL directly; ScrollToTop then
+    // takes it to the top.
+    window.history.replaceState(null, "", "/");
     setSession({ team, role, playerId });
   };
 
@@ -99,6 +104,7 @@ function AppShell() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div
         style={{
           minHeight: "100vh",
@@ -126,6 +132,14 @@ function AppShell() {
       </div>
 
       <style>{`
+        /* In a locked section the status circles sit above the blur overlay
+           (see Section.tsx), sharp but not clickable. Positioned wrappers
+           that set their own position/z-index inline keep them. */
+        .section-locked .section-check {
+          position: relative;
+          z-index: 2;
+          pointer-events: none;
+        }
         .killer-photo-help { display: none; }
         .scroll-down-arrow { animation: scroll-down-bounce 1.6s ease-in-out infinite; }
         @keyframes scroll-down-bounce {
@@ -206,6 +220,16 @@ function AppShell() {
       `}</style>
     </BrowserRouter>
   );
+}
+
+// Every navigation (and the first render after signing in) starts at the top
+// of the page instead of wherever the previous page was scrolled to.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {

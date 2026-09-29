@@ -46,11 +46,15 @@ export default function SectionHelp({
   };
 
   const showButtons = !done && !finished && (canHint || canSkip);
-  if (!section.hintUsed && !section.skipped && !showButtons) return null;
+  // The revealed hint is only useful while the section is still being worked
+  // on; once it's done or skipped, the hint card goes away.
+  const showHint =
+    section.hintUsed && !!section.hint && !done && !section.skipped;
+  if (!showHint && !section.skipped && !showButtons) return null;
 
   return (
     <div style={styles.wrap}>
-      {section.hintUsed && section.hint && (
+      {showHint && (
         <div style={styles.hintBox}>
           <span style={styles.hintIcon}>
             <Lightbulb size={12} color={theme.hintText} />
