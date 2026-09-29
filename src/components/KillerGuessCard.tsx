@@ -108,11 +108,6 @@ export default function KillerGuessCard({
             {remainingSteps.length > 0 && (
               <div className="killer-photo-help">
                 <div style={styles.photoHelpRow}>
-                  <Info
-                    size={18}
-                    color={theme.textFaint}
-                    style={styles.photoHelpIcon}
-                  />
                   <p style={styles.photoHelp}>
                     Innan du kan lösa detta{" "}
                     <span style={styles.mysteryWord}>mordmysterium</span>{" "}
@@ -294,7 +289,7 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "center",
   },
   scrollArrow: {
-    marginTop: 44,
+    marginTop: 18,
     width: 40,
     height: 40,
     borderRadius: "50%",
@@ -330,14 +325,14 @@ const styles: Record<string, React.CSSProperties> = {
   mysteryWord: {
     fontFamily: theme.fontAccent,
     color: theme.primary,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
   photoHelpRow: {
     display: "flex",
     alignItems: "flex-start",
     gap: 8,
-    textAlign: "left",
+    textAlign: "center",
   },
   // Nudged down to line up with the first line of text.
   photoHelpIcon: { flexShrink: 0, marginTop: 2 },

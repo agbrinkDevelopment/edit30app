@@ -7,9 +7,11 @@ import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
 import Modal from "../components/Modal";
 import { docTabColor } from "../shared/helpers";
+import { useGameTimer } from "../context/GameTimerContext";
 
 export default function Evidence() {
   const { game } = useGame();
+  const { started } = useGameTimer();
   const [viewing, setViewing] = useState<GameDocument | null>(null);
 
   const visibleDocuments = game.documents.filter((d) => d.revealed);
@@ -19,7 +21,17 @@ export default function Evidence() {
   const victimNotesTitle = "Offrets anteckningar";
 
   return (
-    <div style={sharedStyles.pagePadded}>
+    // Blurred and inert until the game clock is started, like Utredningen.
+    <div
+      style={{
+        ...sharedStyles.pagePadded,
+        filter: started ? undefined : "blur(2px)",
+        pointerEvents: started ? undefined : "none",
+        userSelect: started ? undefined : "none",
+        transition: "filter 0.4s",
+      }}
+      aria-hidden={!started}
+    >
       <div
         id="forhorsdokument"
         data-scroll-target

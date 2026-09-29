@@ -235,7 +235,9 @@ function AppLayout() {
       <div className="app-side-left" style={sharedStyles.sideColumn}>
         {notAdmin && <GameStartButton />}
         {isOverview && <SideNavbar items={NAV_ITEMS} lockUntilStarted />}
-        {isEvidence && <SideNavbar items={evidenceNavItems} />}
+        {isEvidence && (
+          <SideNavbar items={evidenceNavItems} lockUntilStarted />
+        )}
       </div>
 
       <div style={sharedStyles.page}>
