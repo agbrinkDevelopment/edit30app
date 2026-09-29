@@ -15,6 +15,7 @@ import { usePlayerSections } from "../context/PlayerSectionsContext";
 import { theme } from "../theme";
 import SectionCheckCircle from "./SectionCheckCircle";
 import { fileSrc } from "../api/client";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 // The checklist of sections plus the final killer guess. A section counts as
 // complete when it's done or skipped. The first "Utvärdera" is final: it
@@ -28,6 +29,7 @@ export default function KillerGuessCard({
   const [submitting, setSubmitting] = useState(false);
   const { game } = useGame();
   const { sections, result, submitGuess } = usePlayerSections();
+  const isMobile = useIsMobile();
 
   const suspects = game.characters.filter((c) => c.role === "suspect");
 
@@ -57,7 +59,9 @@ export default function KillerGuessCard({
             particleCount: 240,
             spread: 120,
             startVelocity: 50,
-            origin: { y: 1.2 },
+            // Launched from mid-screen on desktop; from below the bottom
+            // edge on mobile, where the card fills more of the screen.
+            origin: { y: isMobile ? 1.2 : 0.6 },
             disableForReducedMotion: true,
           });
         }
