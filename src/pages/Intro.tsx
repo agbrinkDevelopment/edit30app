@@ -55,12 +55,37 @@ export default function Intro({ onDone }: { onDone: () => void }) {
   usePlayIntroSoundOnce();
   return (
     <SignInFrame maxWidth={860}>
+      <p style={styles.welcome}>
+        Välkomna till <span style={styles.subtitle}>Mordmysterium</span>, Edit
+        30 år edition. Innan mordmysteriet kan börja måste ni lösa detta
+        minispel. Klicka er runt, leta upp de gömda föremålen och lös
+        ledtrådarna – den som låser upp datorn kommer vidare till själva spelet.
+      </p>
+      <h2 style={styles.title}>Minispelet</h2>
       <ApartmentGame onExit={onDone} style={styles.card} />
     </SignInFrame>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  // Same look as the section titles inside the app.
+  title: {
+    alignSelf: "stretch",
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#3d372c",
+    margin: "0 0 8px",
+  },
+  welcome: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 19,
+    lineHeight: 1.5,
+    color: "#3d372c",
+    textAlign: "center",
+    maxWidth: 660,
+    margin: "0 0 24px",
+  },
   // Same card as the sign-in form.
   card: {
     background: "#fff",
@@ -69,5 +94,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 18,
     width: "100%",
     boxSizing: "border-box",
+  },
+  subtitle: {
+    fontFamily: "'Creepster', cursive",
+    fontSize: 19,
+    fontWeight: 400,
+    color: "#a40000",
+    margin: "0 0 30px",
+    textAlign: "center",
   },
 };

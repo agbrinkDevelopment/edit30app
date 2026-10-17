@@ -6,6 +6,8 @@ import {
   HelpCircle,
   KeyRound,
   RotateCcw,
+  Trees,
+  TreesIcon,
 } from "lucide-react";
 import { theme } from "../theme";
 import { sharedStyles } from "../shared/styles";
@@ -20,6 +22,7 @@ type ItemId = "kikare" | "katt" | "nyckel" | "nasgrej";
 
 type SceneId =
   | "hall"
+  | "tavlan"
   | "dubbeldorr"
   | "dorroppning"
   | "garderobsdorr"
@@ -128,8 +131,9 @@ const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "");
 const SCENES: Record<SceneId, Scene> = {
   hall: {
     image: img("1638"),
-    text: "Hallen i Edits lägenhet. Det är tyst – alldeles för tyst.",
+    text: "Hallen i Edit & Viktor's lägenhet.",
     hotspots: [
+      { x: 0, y: 25, w: 22, h: 32, label: "Tavlan", to: "tavlan" },
       {
         x: 30,
         y: 22,
@@ -140,9 +144,15 @@ const SCENES: Record<SceneId, Scene> = {
       },
     ],
   },
+  tavlan: {
+    image: img("1694"),
+    text: "Hmm.. Gullig tavla. Med två troll på en flotte under stjärnhimlen. Uppe på taket ligger en kikare, riktad mot rymden.",
+    back: "hall",
+    hotspots: [],
+  },
   dubbeldorr: {
     image: img("1639"),
-    text: "En stängd dubbeldörr. Handtaget är kallt.",
+    text: "En stängd dubbeldörr. Undrar vad som finns bakom den?",
     back: "hall",
     hotspots: [
       {
@@ -167,7 +177,7 @@ const SCENES: Record<SceneId, Scene> = {
         y: 20,
         w: 20,
         h: 60,
-        label: "Den andra dörren",
+        label: "Gå till garderoben",
         to: "garderobsdorr",
       },
     ],
@@ -494,7 +504,7 @@ const SCENES: Record<SceneId, Scene> = {
         h: 17,
         label: "Ta brickan",
         item: "katt",
-        say: "En katt? Det här måste betyda något. Titta närmare på den i fickan.",
+        say: "En katt? Det är något ristat på baksidan …",
       },
     ],
   },
@@ -583,6 +593,8 @@ export default function ApartmentGame({
       setProgress((p) =>
         p.items.includes(item) ? p : { ...p, items: [...p.items, item] },
       );
+      // The cat coaster's rebus opens as soon as it's picked up.
+      if (item === "katt" && !progress.rebusSolved) setPuzzle("rebus");
     }
     if (!h.to) return;
     const to = h.to;
@@ -719,8 +731,8 @@ export default function ApartmentGame({
 
           {allFound && (
             <div style={styles.done}>
-              Du har hittat allt som gömts i lägenheten. Vad kan kikaren, katten
-              och nyckeln ha med mordet att göra?
+              Du har hittat allt som gömts i lägenheten. Hur kan kikaren och
+              katt-rebusen ta mig närmare mordmysteriumet?
             </div>
           )}
 
@@ -745,7 +757,9 @@ export default function ApartmentGame({
           </p>
           <div style={styles.rebus}>
             <Cat size={56} color={theme.accent} />
-            <span>– T + EDRALEN</span>
+            <span>
+              – T + EDR + <Trees /> + 1
+            </span>
           </div>
         </AnswerModal>
       )}
