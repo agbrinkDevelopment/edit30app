@@ -44,6 +44,76 @@ export default function SignIn({ onSignIn }: Props) {
   };
 
   return (
+    <SignInFrame>
+      <div
+        style={{
+          ...styles.card,
+          animation: shake ? "shake 0.4s ease" : undefined,
+        }}
+      >
+        <img
+          src="/other/uppsala_bermuda.jpg"
+          alt="Raggen Dödar"
+          style={styles.banner}
+        />
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Lagnamn</label>
+            <input
+              style={styles.input}
+              type="text"
+              placeholder="Lagnamn..."
+              value={teamName}
+              onChange={(e) => {
+                setTeamName(e.target.value);
+                setError("");
+              }}
+              autoFocus
+              autoComplete="off"
+            />
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>Kod</label>
+            <input
+              style={{ ...styles.input, ...styles.codeInput }}
+              type="text"
+              inputMode="numeric"
+              placeholder="• • • • • •"
+              value={code}
+              onChange={handleCodeChange}
+              maxLength={6}
+              autoComplete="off"
+            />
+          </div>
+
+          {error && <div style={styles.error}>{error}</div>}
+
+          <button
+            type="submit"
+            style={{
+              ...styles.btn,
+              opacity: teamName && code.length === 6 ? 1 : 0.6,
+            }}
+          >
+            Gå vidare
+          </button>
+        </form>
+      </div>
+    </SignInFrame>
+  );
+}
+
+// The sign-in page's look — white page, floral edges, "Edit 30 år /
+// Mordmysterium" heading — around any content. Also used by the Intro page.
+export function SignInFrame({
+  children,
+  maxWidth = 480,
+}: {
+  children: React.ReactNode;
+  maxWidth?: number;
+}) {
+  return (
     <div style={styles.page}>
       {/* Left floral strip */}
       <div
@@ -65,7 +135,7 @@ export default function SignIn({ onSignIn }: Props) {
         }}
       />
 
-      <div className="signin-content" style={styles.content}>
+      <div className="signin-content" style={{ ...styles.content, maxWidth }}>
         <h1 className="signin-title" style={styles.title}>
           Edit 30 år
         </h1>
@@ -73,61 +143,7 @@ export default function SignIn({ onSignIn }: Props) {
           Mordmysterium
         </p>
 
-        <div
-          style={{
-            ...styles.card,
-            animation: shake ? "shake 0.4s ease" : undefined,
-          }}
-        >
-          <img
-            src="/other/raggen-dodar.jpg"
-            alt="Raggen Dödar"
-            style={styles.banner}
-          />
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Lagnamn</label>
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Lagnamn..."
-                value={teamName}
-                onChange={(e) => {
-                  setTeamName(e.target.value);
-                  setError("");
-                }}
-                autoFocus
-                autoComplete="off"
-              />
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Kod</label>
-              <input
-                style={{ ...styles.input, ...styles.codeInput }}
-                type="text"
-                inputMode="numeric"
-                placeholder="• • • • • •"
-                value={code}
-                onChange={handleCodeChange}
-                maxLength={6}
-                autoComplete="off"
-              />
-            </div>
-
-            {error && <div style={styles.error}>{error}</div>}
-
-            <button
-              type="submit"
-              style={{
-                ...styles.btn,
-                opacity: teamName && code.length === 6 ? 1 : 0.6,
-              }}
-            >
-              Gå vidare
-            </button>
-          </form>
-        </div>
+        {children}
       </div>
 
       <style>{`

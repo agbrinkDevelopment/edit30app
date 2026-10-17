@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { Clock, EyeOff } from 'lucide-react';
 import { theme } from '../theme';
+import { sortByRole } from '../shared/helpers';
 import { sharedStyles } from '../shared/styles';
 
 export default function Handelseforloppet() {
@@ -34,8 +35,8 @@ export default function Handelseforloppet() {
               <div style={{ ...styles.card, opacity: e.revealed ? 1 : 0.6 }}>
                 <p style={styles.desc}>{e.description || 'Ingen information tillagd.'}</p>
                 <div style={styles.chips}>
-                  {e.characterIds.map(id => (
-                    <span key={id} style={sharedStyles.tag}>{charById.get(id)?.name ?? 'Okänd'}</span>
+                  {sortByRole(e.characterIds.map(id => ({ id, name: charById.get(id)?.name ?? 'Okänd', role: charById.get(id)?.role ?? '' }))).map(c => (
+                    <span key={c.id} style={{ ...sharedStyles.tag, background: theme.cardBg, border: `1.5px solid ${theme.roleColors[c.role] ?? theme.inputBorder}` }}>{c.name}</span>
                   ))}
                   {!e.revealed && (
                     <span style={sharedStyles.hiddenTag}><EyeOff size={11} /> Dold för spelarna</span>

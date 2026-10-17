@@ -2,6 +2,7 @@ import React from "react";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { Character } from "../types";
 import { theme } from "../theme";
+import { sortByRole } from "../shared/helpers";
 import { sharedStyles } from "../shared/styles";
 import Modal from "./Modal";
 import CharacterPill from "./CharacterPill";
@@ -74,7 +75,7 @@ export default function TimelineEventFormModal({
         rows={4}
       />
       <div style={styles.charPicker}>
-        {characters.map((c) => (
+        {sortByRole(characters).map((c) => (
           <CharacterPill
             key={c.id}
             character={c}

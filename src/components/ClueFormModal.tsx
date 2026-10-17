@@ -2,6 +2,7 @@ import React from "react";
 import { Check, Skull, X } from "lucide-react";
 import { Character } from "../types";
 import { theme } from "../theme";
+import { sortByRole } from "../shared/helpers";
 import { sharedStyles } from "../shared/styles";
 import Modal from "./Modal";
 import CharacterPill from "./CharacterPill";
@@ -84,7 +85,7 @@ export default function ClueFormModal({
       </Field>
       <Field label="Kopplade karaktärer">
         <div style={styles.charPicker}>
-          {characters.map((c) => (
+          {sortByRole(characters).map((c) => (
             <CharacterPill
               key={c.id}
               character={c}

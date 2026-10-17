@@ -19,6 +19,7 @@ export default function CharacterPill({ character, selected, onClick }: Props) {
       style={{
         ...styles.pill,
         ...(selected ? styles.pillSelected : {}),
+        borderColor: theme.roleColors[character.role] ?? theme.inputBorder,
       }}
     >
       <span style={styles.avatar}>
@@ -42,8 +43,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    background: theme.inputBg,
-    border: 0,
+    background: theme.cardBg,
+    // Colour is set per character (their role colour) where it's rendered.
+    border: "1.5px solid transparent",
     borderRadius: 20,
     padding: "4px 14px 4px 4px",
     color: theme.text,

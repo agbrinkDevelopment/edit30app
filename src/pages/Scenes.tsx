@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Scene } from '../types';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
 import { theme } from '../theme';
+import { sortByRole } from '../shared/helpers';
 import { sharedStyles } from '../shared/styles';
 
 const emptyScene = (): Omit<Scene, 'id' | 'order'> => ({
@@ -94,7 +95,7 @@ export default function Scenes() {
       ) : (
         <div style={styles.timeline}>
           {sorted.map((scene, idx) => {
-            const chars = game.characters.filter(c => scene.characterIds.includes(c.id));
+            const chars = sortByRole(game.characters.filter(c => scene.characterIds.includes(c.id)));
             const clues = game.clues.filter(cl => scene.clueIds.includes(cl.id));
             return (
               <div key={scene.id} style={styles.timelineRow}>
@@ -114,7 +115,7 @@ export default function Scenes() {
                   </div>
                   {scene.description && <p style={sharedStyles.desc}>{scene.description}</p>}
                   <div style={styles.chipRow}>
-                    {chars.map(c => <span key={c.id} style={{ ...styles.chip, background: theme.accentBg, color: theme.accent }}>{c.name}</span>)}
+                    {chars.map(c => <span key={c.id} style={{ ...styles.chip, border: `1.5px solid ${theme.roleColors[c.role] ?? theme.inputBorder}`, background: theme.cardBg, color: theme.accent }}>{c.name}</span>)}
                     {clues.map(cl => <span key={cl.id} style={{ ...styles.chip, background: '#e6f2ec', color: '#2f6b4f' }}>{cl.title}</span>)}
                   </div>
                 </div>

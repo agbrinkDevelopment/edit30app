@@ -19,7 +19,7 @@ export default function GameInfoCard() {
       <p style={styles.subtitle}>Mordmysterium</p>
       <div style={styles.header}>
         <InfoIcon size={25} color={theme.textFaint} />
-        <h2 style={sharedStyles.sectionTitle}>{game.title}</h2>
+        <h2 style={sharedStyles.sectionTitle}>Uppsala Bermuda</h2>
       </div>
       <p style={styles.text}>
         {game.description ||

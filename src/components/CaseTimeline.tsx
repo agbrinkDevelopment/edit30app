@@ -9,7 +9,7 @@ import Modal from "./Modal";
 import TimelineEventFormModal, {
   emptyTimelineEventDraft,
 } from "./TimelineEventFormModal";
-import { formatMinutes, toMinutes } from "../shared/helpers";
+import { formatMinutes, sortByRole, toMinutes } from "../shared/helpers";
 import { fileSrc } from "../api/client";
 
 const LANE_HEIGHT = 56;
@@ -17,6 +17,8 @@ const PX_PER_MIN = 5;
 const PAD_X = 30;
 const AXIS_HEIGHT = 32;
 const TICK_INTERVAL_MIN = 30;
+// Half the width of the outline drawn around an event's dots.
+const EVENT_PILL_RADIUS = 16;
 
 function computeLaneOrder(
   characterIds: string[],
@@ -153,14 +155,6 @@ export default function CaseTimeline({
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortedEvents, minMinutes]);
-
-  const eventY = (e: PlayerTimelineEvent) => {
-    if (e.characterIds.length <= 1) return laneY.get(e.characterIds[0]) ?? 0;
-    const ys = e.characterIds
-      .map((id) => laneY.get(id))
-      .filter((y): y is number => y !== undefined);
-    return ys.reduce((a, b) => a + b, 0) / ys.length;
-  };
 
   const ticks = useMemo(() => {
     if (sortedEvents.length === 0) return [];
@@ -341,23 +335,11 @@ export default function CaseTimeline({
                     e.characterIds.includes(id),
                   );
                   if (evs.length < 2) return null;
-                  let d = "";
-                  evs.forEach((e, i) => {
-                    const x = eventX.get(e.id)!;
-                    const y = eventY(e);
-                    if (i === 0) {
-                      d += `M ${x},${y}`;
-                    } else {
-                      const prevX = eventX.get(evs[i - 1].id)!;
-                      const prevY = eventY(evs[i - 1]);
-                      if (prevY === y) {
-                        d += ` L ${x},${y}`;
-                      } else {
-                        const midX = (prevX + x) / 2;
-                        d += ` C ${midX},${prevY} ${midX},${y} ${x},${y}`;
-                      }
-                    }
-                  });
+                  // A straight line along the character's own row, from
+                  // their first event to their last.
+                  const y = laneY.get(id)!;
+                  const x1 = eventX.get(evs[0].id)!;
+                  const x2 = eventX.get(evs[evs.length - 1].id)!;
                   const role = charById.get(id)?.role;
                   const strokeDasharray =
                     role === "witness"
@@ -368,10 +350,12 @@ export default function CaseTimeline({
                           ? "8 4 2 4"
                           : undefined;
                   return (
-                    <path
+                    <line
                       key={id}
-                      d={d}
-                      fill="none"
+                      x1={x1}
+                      y1={y}
+                      x2={x2}
+                      y2={y}
                       stroke={theme.roleColors[role ?? ""] ?? theme.divider}
                       strokeWidth={2.5}
                       strokeDasharray={strokeDasharray}
@@ -382,8 +366,6 @@ export default function CaseTimeline({
 
                 {sortedEvents.map((e) => {
                   const x = eventX.get(e.id)!;
-                  const y = eventY(e);
-                  const isMerge = e.characterIds.length > 1;
                   return (
                     <g
                       key={e.id}
@@ -392,14 +374,45 @@ export default function CaseTimeline({
                       }}
                       style={{ cursor: "pointer" }}
                     >
-                      <circle
-                        cx={x}
-                        cy={y}
-                        r={isMerge ? 10 : 7}
-                        fill={isMerge ? theme.accent : theme.cardBg}
-                        stroke={theme.accent}
-                        strokeWidth={2.5}
-                      />
+                      {/* An event is a dot on each participant's row,
+                          grouped by a rounded outline (a plain circle when
+                          there's only one participant). */}
+                      {(() => {
+                        const ys = e.characterIds
+                          .map((id) => laneY.get(id))
+                          .filter((v): v is number => v !== undefined);
+                        if (ys.length === 0) return null;
+                        const top = Math.min(...ys) - EVENT_PILL_RADIUS;
+                        const bottom = Math.max(...ys) + EVENT_PILL_RADIUS;
+                        return (
+                          <rect
+                            x={x - EVENT_PILL_RADIUS}
+                            y={top}
+                            width={EVENT_PILL_RADIUS * 2}
+                            height={bottom - top}
+                            rx={EVENT_PILL_RADIUS}
+                            fill={theme.cardBg}
+                            stroke={theme.accent}
+                            strokeWidth={1.5}
+                          />
+                        );
+                      })()}
+                      {e.characterIds.map((id) => {
+                        const rowY = laneY.get(id);
+                        if (rowY === undefined) return null;
+                        return (
+                          <circle
+                            key={id}
+                            cx={x}
+                            cy={rowY}
+                            r={5}
+                            fill={
+                              theme.roleColors[charById.get(id)?.role ?? ""] ??
+                              theme.accent
+                            }
+                          />
+                        );
+                      })}
                     </g>
                   );
                 })}
@@ -439,9 +452,21 @@ export default function CaseTimeline({
               {selected.description || "Ingen beskrivning tillagd."}
             </p>
             <div style={styles.detailChips}>
-              {selected.characterIds.map((id) => (
-                <span key={id} style={styles.detailChip}>
-                  {charById.get(id)?.name ?? "Okänd"}
+              {sortByRole(
+                selected.characterIds.map((id) => ({
+                  id,
+                  name: charById.get(id)?.name ?? "Okänd",
+                  role: charById.get(id)?.role ?? "",
+                })),
+              ).map((c) => (
+                <span
+                  key={c.id}
+                  style={{
+                    ...styles.detailChip,
+                    borderColor: theme.roleColors[c.role] ?? theme.inputBorder,
+                  }}
+                >
+                  {c.name}
                 </span>
               ))}
             </div>
@@ -598,9 +623,11 @@ const styles: Record<string, React.CSSProperties> = {
   detailChips: { display: "flex", gap: 6, flexWrap: "wrap" },
   detailChip: {
     fontSize: 12,
-    background: theme.accentBg,
+    background: theme.cardBg,
     color: theme.textFaint,
     padding: "2px 8px",
     borderRadius: 20,
+    // Colour is set per character (their role colour) where it's rendered.
+    border: "1.5px solid transparent",
   },
 };

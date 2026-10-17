@@ -1,6 +1,14 @@
 import { theme } from "../theme";
 import { INVESTIGATION_SECTIONS } from "./data";
 
+// Orders characters by role (detective, victim, suspects, witnesses), which
+// also groups them by role colour. Stable, so ties keep their given order.
+export function sortByRole<T extends { role: string }>(characters: T[]): T[] {
+  return [...characters].sort(
+    (a, b) => (theme.roleOrder[a.role] ?? 99) - (theme.roleOrder[b.role] ?? 99),
+  );
+}
+
 export function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
