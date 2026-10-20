@@ -24,11 +24,8 @@ import CharacterInvestigate from "./pages/CharacterInvestigate";
 import Compilation from "./pages/Compilation";
 import Evidence from "./pages/Evidence";
 import SignIn from "./pages/SignIn";
-import Intro from "./pages/Intro";
 import Admin from "./pages/Admin";
 import { api } from "./api/client";
-
-const INTRO_DONE_KEY = "lagenheten-done";
 
 function loadSession(): Session | null {
   const team = localStorage.getItem("mystery-team");
@@ -39,31 +36,6 @@ function loadSession(): Session | null {
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(loadSession);
-  // Whether the player has played through the apartment game (Intro) to the
-  // computer screen; until then it's shown instead of the sign-in page.
-  const [introDone, setIntroDone] = useState(() => {
-    try {
-      return localStorage.getItem(INTRO_DONE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-
-  const finishIntro = () => {
-    try {
-      localStorage.setItem(INTRO_DONE_KEY, "1");
-    } catch {
-      // ignore storage errors
-    }
-    // Arriving at the sign-in page from the game plays the jingle. This runs
-    // from the player's click, so the browser allows the sound.
-    new Audio("/lagenheten/her_interactive_new.aif")
-      .play()
-      .catch(() => undefined);
-    window.scrollTo(0, 0);
-    setIntroDone(true);
-  };
-
   const handleSignIn = async (team: string, role: Role) => {
     localStorage.setItem("mystery-team", team);
     localStorage.setItem("mystery-role", role);
@@ -91,10 +63,7 @@ export default function App() {
     setSession(null);
   };
 
-  if (!session) {
-    if (!introDone) return <Intro onDone={finishIntro} />;
-    return <SignIn onSignIn={handleSignIn} />;
-  }
+  if (!session) return <SignIn onSignIn={handleSignIn} />;
 
   return (
     <AuthProvider session={session} signOut={handleSignOut}>

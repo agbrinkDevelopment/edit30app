@@ -1,8 +1,61 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Role } from "../context/AuthContext";
 
 const ADMIN_CODE = "300030";
 const PLAYER_CODE = "100100";
+
+const INTRO_SOUND = "/lagenheten/her_interactive_new.m4a";
+// Its own key: the old intro page's "lagenheten-intro-sound-played" is
+// already set in browsers that played it, which would keep this silent.
+const INTRO_SOUND_KEY = "signin-sound-played";
+
+// Plays the intro jingle the first time someone opens the sign-in page (per
+// browser). Browsers block sound until the page has been interacted with, so
+// if the immediate attempt is refused it plays on the first click or key press.
+function usePlayIntroSoundOnce() {
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(INTRO_SOUND_KEY)) return;
+    } catch {
+      // ignore storage errors
+    }
+    const audio = new Audio(INTRO_SOUND);
+    // StrictMode runs this effect twice; the first run's play() is aborted
+    // by the cleanup and must not attach listeners after it.
+    let cancelled = false;
+    const markPlayed = () => {
+      try {
+        localStorage.setItem(INTRO_SOUND_KEY, "1");
+      } catch {
+        // ignore storage errors
+      }
+    };
+    const playOnInteraction = () => {
+      audio
+        .play()
+        .then(markPlayed)
+        .catch(() => undefined);
+      removeListeners();
+    };
+    const removeListeners = () => {
+      window.removeEventListener("pointerdown", playOnInteraction);
+      window.removeEventListener("keydown", playOnInteraction);
+    };
+    audio
+      .play()
+      .then(markPlayed)
+      .catch(() => {
+        if (cancelled) return;
+        window.addEventListener("pointerdown", playOnInteraction);
+        window.addEventListener("keydown", playOnInteraction);
+      });
+    return () => {
+      cancelled = true;
+      removeListeners();
+      audio.pause();
+    };
+  }, []);
+}
 
 interface Props {
   onSignIn: (teamName: string, role: Role) => void;
@@ -13,6 +66,7 @@ export default function SignIn({ onSignIn }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
+  usePlayIntroSoundOnce();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

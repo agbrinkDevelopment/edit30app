@@ -36,6 +36,10 @@ export default function Overview() {
     loadProgress(PROGRESS_KEY),
   );
 
+  // Kartan is done when every location on it is checked — saved per player
+  // in the backend, not in this browser's progress.
+  const [kartanDone, setKartanDone] = React.useState(false);
+
   const toggleStep = (id: string) => {
     setProgress((prev) => {
       const next = { ...prev, [id]: !prev[id] };
@@ -52,7 +56,7 @@ export default function Overview() {
   // tracked separately, see SectionHelp / KillerGuessCard). A section with
   // no characters to look at counts as done.
   const sectionDone: Record<string, boolean> = {
-    kartan: !!progress["kartan"],
+    kartan: kartanDone,
     tidslinje: playerTimeline.solved,
     ledtradar: playerClue.solved,
     detektiven: !detective || isCharacterInvestigated(detective.id, progress),
@@ -92,10 +96,7 @@ export default function Overview() {
         locked={isLocked("kartan")}
         footer={<SectionHelp sectionId="kartan" done={sectionDone.kartan} />}
       >
-        <CityMap
-          done={!!progress["kartan"]}
-          onToggleDone={() => toggleStep("kartan")}
-        />
+        <CityMap onDoneChange={setKartanDone} />
       </Section>
 
       <Section

@@ -48,9 +48,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 // Resolves that against the API's own origin; any other URL (public assets
 // like "/characters/…", old data: URLs) is returned unchanged.
 export function fileSrc(url: string): string;
-export function fileSrc(
-  url: string | null | undefined,
-): string | undefined;
+export function fileSrc(url: string | null | undefined): string | undefined;
 export function fileSrc(url: string | null | undefined) {
   if (!url) return undefined;
   return url.startsWith("/api/")
@@ -150,7 +148,8 @@ export const api = {
     playerId: string,
     id: string,
     e: Partial<PlayerTimelineEvent>,
-  ) => put<PlayerTimelineEvent>(`/players/${playerId}/timeline-events/${id}`, e),
+  ) =>
+    put<PlayerTimelineEvent>(`/players/${playerId}/timeline-events/${id}`, e),
   deletePlayerTimelineEvent: (playerId: string, id: string) =>
     del(`/players/${playerId}/timeline-events/${id}`),
   getPlayerTimelineStatus: (playerId: string) =>
@@ -182,6 +181,18 @@ export const api = {
   getPlayerClueStatus: (playerId: string) =>
     get<{ solved: boolean; solvedCharacterIds: string[] }>(
       `/players/${playerId}/clue-status`,
+    ),
+
+  // Kartan: ids of the characters whose location the player has completed.
+  getPlayerMap: (playerId: string) => get<string[]>(`/players/${playerId}/map`),
+  setPlayerMapLocation: (
+    playerId: string,
+    characterId: string,
+    done: boolean,
+  ) =>
+    put<{ characterId: string; done: boolean }>(
+      `/players/${playerId}/map/${characterId}`,
+      { done },
     ),
 
   getSectionHints: () => get<SectionHint[]>("/section-hints"),

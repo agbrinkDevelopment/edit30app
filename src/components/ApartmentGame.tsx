@@ -118,13 +118,13 @@ const ITEMS: Record<
 
 const START: SceneId = "hall";
 
-// The two clues before the player may leave for the sign-in page: the rebus
+// The two clues before the player can unlock the computer: the rebus
 // on the cat coaster says where to look ("katedralen"), and the code is the
 // year cut into the cathedral, seen through the binoculars, which is typed
 // into the computer screen. Uppsala domkyrka was consecrated in 1435.
 const REBUS_ANSWERS = ["katedral", "katedralen"];
 const CODE = "1435";
-const WRONG_SOUND = "/lagenheten/cant_check_that_off.m4a";
+const WRONG_SOUND = "/lagenheten/cant_check_that_off_new.m4a";
 
 const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "");
 
@@ -212,7 +212,7 @@ const SCENES: Record<SceneId, Scene> = {
         to: "garderob",
         requires: "nyckel",
         locked: "Dörren är låst. Du behöver en nyckel.",
-        lockedSound: "/lagenheten/its_locked_new.aif",
+        lockedSound: "/lagenheten/its_locked_new.m4a",
         say: "Nyckeln passar! Låset klickar till.",
       },
     ],
@@ -369,7 +369,7 @@ const SCENES: Record<SceneId, Scene> = {
         exitCode: CODE,
         requires: "all",
         locked: "Du kan inte bocka av det här än. Leta vidare i lägenheten.",
-        lockedSound: "/lagenheten/cant_check_that_off_new.aif",
+        lockedSound: "/lagenheten/cant_check_that_off_new.m4a",
       },
       {
         x: 40,
@@ -541,6 +541,18 @@ export default function ApartmentGame({
   const [said, setSaid] = useState<string | null>(null);
   // The in-between photo while a door is swinging open.
   const [frame, setFrame] = useState<string | null>(null);
+  // The photo on screen and the one before it. The previous photo stays
+  // underneath while the new one fades in on top, so switching photos
+  // (a door swinging open, moving between views) cross-fades instead of
+  // flashing the black viewer background while the new image loads.
+  const shownSrc = frame ?? SCENES[progress.scene].image;
+  const [photos, setPhotos] = useState({
+    prev: null as string | null,
+    cur: shownSrc,
+  });
+  useEffect(() => {
+    setPhotos((p) => (p.cur === shownSrc ? p : { prev: p.cur, cur: shownSrc }));
+  }, [shownSrc]);
   const [hovered, setHovered] = useState<number | null>(null);
   const [shown, setShown] = useState<string | null>(null);
   // Which answer prompt is open, if any.
@@ -634,8 +646,8 @@ export default function ApartmentGame({
   return (
     <div style={{ ...sharedStyles.card, ...style }}>
       <style>{`
-        .lagenheten-photo { animation: lagenheten-fade 0.35s ease-out; }
-        @keyframes lagenheten-fade { from { opacity: 0.2; } to { opacity: 1; } }
+        .lagenheten-photo { animation: lagenheten-fade 0.25s ease-out; }
+        @keyframes lagenheten-fade { from { opacity: 0; } to { opacity: 1; } }
         @media (prefers-reduced-motion: reduce) {
           .lagenheten-photo { animation: none; }
         }
@@ -643,10 +655,18 @@ export default function ApartmentGame({
 
       <div style={styles.layout}>
         <div style={styles.viewer}>
+          {photos.prev && (
+            <img
+              src={photos.prev}
+              alt=""
+              style={styles.photo}
+              draggable={false}
+            />
+          )}
           <img
-            key={frame ?? scene.image}
-            className={frame ? undefined : "lagenheten-photo"}
-            src={frame ?? scene.image}
+            key={photos.cur}
+            className="lagenheten-photo"
+            src={photos.cur}
             alt=""
             style={styles.photo}
             draggable={false}
@@ -914,6 +934,8 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: "none",
   },
   photo: {
+    position: "absolute",
+    inset: 0,
     width: "100%",
     height: "100%",
     objectFit: "cover",
