@@ -7,7 +7,8 @@ import {
   SectionHint,
   TimelineEvent,
 } from "../types";
-import { MYSTERY_SECTIONS } from "../shared/data";
+import { MYSTERY_SECTIONS, mapSectionId } from "../shared/data";
+import { groupMapLocations } from "../hooks/useMapLocations";
 import {
   Plus,
   Trash2,
@@ -689,6 +690,15 @@ function ClueAdmin() {
 // revealing it / skipping the section adds to their time. Leaving the hint
 // empty means players go straight to the skip option.
 function SectionHintAdmin() {
+  const { game } = useGame();
+  // The page's sections, then each location on Kartan.
+  const sectionList = [
+    ...MYSTERY_SECTIONS,
+    ...groupMapLocations(game.characters).map((members) => ({
+      id: mapSectionId(members[0].id),
+      label: `Kartan – ${members.map((m) => m.name).join(" & ")}`,
+    })),
+  ];
   const [hints, setHints] = useState<Record<string, SectionHint>>({});
   const [saved, setSaved] = useState<Record<string, SectionHint>>({});
   const [error, setError] = useState<string | null>(null);
@@ -746,7 +756,7 @@ function SectionHintAdmin() {
 
   return (
     <div style={sharedStyles.list}>
-      {MYSTERY_SECTIONS.filter((s) => hints[s.id]).map((s) => {
+      {sectionList.filter((s) => hints[s.id]).map((s) => {
         const h = hints[s.id];
         const dirty = JSON.stringify(h) !== JSON.stringify(saved[s.id]);
         return (

@@ -19,6 +19,12 @@ const AXIS_HEIGHT = 32;
 const TICK_INTERVAL_MIN = 30;
 // Half the width of the outline drawn around an event's dots.
 const EVENT_PILL_RADIUS = 16;
+// The timeline is split in three by two dividers spanning every row: the
+// events before 18:00 lead up to the first, the ones from 20:00 on lead away
+// from the second, and the players fill in what happened in between (shaded).
+const DIVIDER_START = toMinutes("18:00");
+const DIVIDER_END = toMinutes("20:00");
+const MIDDLE_BG = "#efebe3";
 
 function computeLaneOrder(
   characterIds: string[],
@@ -136,15 +142,17 @@ export default function CaseTimeline({
     return m;
   }, [laneCharIds]);
 
-  const minMinutes = useMemo(() => {
-    if (sortedEvents.length === 0) return 0;
-    return Math.min(...sortedEvents.map((e) => toMinutes(e.time)));
-  }, [sortedEvents]);
+  // Always wide enough to show both dividers.
+  const minMinutes = useMemo(
+    () =>
+      Math.min(DIVIDER_START, ...sortedEvents.map((e) => toMinutes(e.time))),
+    [sortedEvents],
+  );
 
-  const maxMinutes = useMemo(() => {
-    if (sortedEvents.length === 0) return 0;
-    return Math.max(...sortedEvents.map((e) => toMinutes(e.time)));
-  }, [sortedEvents]);
+  const maxMinutes = useMemo(
+    () => Math.max(DIVIDER_END, ...sortedEvents.map((e) => toMinutes(e.time))),
+    [sortedEvents],
+  );
 
   const timeToX = (minutes: number) =>
     PAD_X + (minutes - minMinutes) * PX_PER_MIN;
@@ -157,14 +165,13 @@ export default function CaseTimeline({
   }, [sortedEvents, minMinutes]);
 
   const ticks = useMemo(() => {
-    if (sortedEvents.length === 0) return [];
     const first =
       Math.floor(minMinutes / TICK_INTERVAL_MIN) * TICK_INTERVAL_MIN;
     const last = Math.ceil(maxMinutes / TICK_INTERVAL_MIN) * TICK_INTERVAL_MIN;
     const result: number[] = [];
     for (let t = first; t <= last; t += TICK_INTERVAL_MIN) result.push(t);
     return result;
-  }, [minMinutes, maxMinutes, sortedEvents.length]);
+  }, [minMinutes, maxMinutes]);
 
   const lastTick = ticks[ticks.length - 1] ?? maxMinutes;
   const graphY = laneCharIds.length * LANE_HEIGHT;
@@ -286,6 +293,26 @@ export default function CaseTimeline({
                   stroke={theme.cardBorder}
                   strokeWidth={1}
                 />
+                {/* The players' part, between the two dividers. */}
+                <rect
+                  x={timeToX(DIVIDER_START)}
+                  y={0}
+                  width={timeToX(DIVIDER_END) - timeToX(DIVIDER_START)}
+                  height={graphY}
+                  fill={MIDDLE_BG}
+                />
+                {/* Its left and right borders. */}
+                {[DIVIDER_START, DIVIDER_END].map((t) => (
+                  <line
+                    key={`middle-border-${t}`}
+                    x1={timeToX(t)}
+                    y1={0}
+                    x2={timeToX(t)}
+                    y2={graphY}
+                    stroke={theme.accent}
+                    strokeWidth={1}
+                  />
+                ))}
                 {laneCharIds.slice(0, -1).map((id, i) => (
                   <line
                     key={`divider-${id}`}
@@ -334,12 +361,23 @@ export default function CaseTimeline({
                   const evs = sortedEvents.filter((e) =>
                     e.characterIds.includes(id),
                   );
-                  if (evs.length < 2) return null;
-                  // A straight line along the character's own row, from
-                  // their first event to their last.
+                  const minutes = evs.map((e) => toMinutes(e.time));
+                  const before = minutes.filter((m) => m < DIVIDER_START);
+                  const between = minutes.filter(
+                    (m) => m >= DIVIDER_START && m < DIVIDER_END,
+                  );
+                  const after = minutes.filter((m) => m >= DIVIDER_END);
+                  // Straight lines along the character's own row: from
+                  // their first event to the 18:00 divider, across the
+                  // middle when they have events there, and from the 20:00
+                  // divider to their last event.
+                  const segments: [number, number][] = [];
+                  if (before.length) segments.push([before[0], DIVIDER_START]);
+                  if (between.length)
+                    segments.push([DIVIDER_START, DIVIDER_END]);
+                  if (after.length)
+                    segments.push([DIVIDER_END, after[after.length - 1]]);
                   const y = laneY.get(id)!;
-                  const x1 = eventX.get(evs[0].id)!;
-                  const x2 = eventX.get(evs[evs.length - 1].id)!;
                   const role = charById.get(id)?.role;
                   const strokeDasharray =
                     role === "witness"
@@ -349,20 +387,39 @@ export default function CaseTimeline({
                         : role === "detective"
                           ? "8 4 2 4"
                           : undefined;
-                  return (
+                  return segments.map(([from, to]) => (
                     <line
-                      key={id}
-                      x1={x1}
+                      key={`${id}-${from}`}
+                      x1={timeToX(from)}
                       y1={y}
-                      x2={x2}
+                      x2={timeToX(to)}
                       y2={y}
                       stroke={theme.roleColors[role ?? ""] ?? theme.divider}
                       strokeWidth={2.5}
                       strokeDasharray={strokeDasharray}
                       opacity={0.55}
                     />
-                  );
+                  ));
                 })}
+
+                {/* The two dividers: an empty outline across every row,
+                    shaped like an event's. */}
+                {[DIVIDER_START, DIVIDER_END].map((t) => (
+                  <rect
+                    key={`split-${t}`}
+                    x={timeToX(t) - EVENT_PILL_RADIUS}
+                    y={LANE_HEIGHT / 2 - EVENT_PILL_RADIUS}
+                    width={EVENT_PILL_RADIUS * 2}
+                    height={
+                      (laneCharIds.length - 1) * LANE_HEIGHT +
+                      EVENT_PILL_RADIUS * 2
+                    }
+                    rx={EVENT_PILL_RADIUS}
+                    fill={theme.cardBg}
+                    stroke={theme.accent}
+                    strokeWidth={1.5}
+                  />
+                ))}
 
                 {sortedEvents.map((e) => {
                   const x = eventX.get(e.id)!;

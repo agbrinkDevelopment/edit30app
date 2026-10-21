@@ -7,7 +7,11 @@ import { usePlayerClue } from "../hooks/usePlayerClue";
 import CaseTimeline from "../components/CaseTimeline";
 import PlayerEvidenceCard from "../components/PlayerEvidenceCard";
 import CityMap from "../components/CityMap";
-import { isCharacterInvestigated, loadProgress } from "../shared/helpers";
+import {
+  isCharacterInvestigated,
+  loadProgress,
+  sortByRole,
+} from "../shared/helpers";
 import { MYSTERY_SECTIONS, PROGRESS_KEY } from "../shared/data";
 import SectionHelp from "../components/SectionHelp";
 import { usePlayerSections } from "../context/PlayerSectionsContext";
@@ -17,6 +21,7 @@ import KillerGuessCard from "../components/KillerGuessCard";
 import CharacterGrid from "../components/CharacterGrid";
 import { useGameTimer } from "../context/GameTimerContext";
 import CluesCard from "../components/CluesCard";
+import { useMapLocations } from "../hooks/useMapLocations";
 
 export default function Overview() {
   const { game } = useGame();
@@ -36,9 +41,10 @@ export default function Overview() {
     loadProgress(PROGRESS_KEY),
   );
 
-  // Kartan is done when every location on it is checked — saved per player
-  // in the backend, not in this browser's progress.
-  const [kartanDone, setKartanDone] = React.useState(false);
+  // Kartan is done when every location on it is checked or skipped — saved
+  // per player in the backend, not in this browser's progress.
+  const map = useMapLocations();
+  const kartanDone = map.allDone;
 
   const toggleStep = (id: string) => {
     setProgress((prev) => {
@@ -87,23 +93,75 @@ export default function Overview() {
             ...s,
             done: sectionDone[s.id],
           }))}
+          subSteps={{
+            kartan: {
+              plain: true,
+              rows: map.pins.map((p) => ({
+                id: p.id,
+                sectionId: p.sectionId,
+                label: p.name,
+                done: p.done,
+              })),
+            },
+            // One row per lane, checked when that character's events are
+            // right (or the whole timeline is).
+            tidslinje: {
+              rows: sortByRole(game.characters).map((c) => ({
+                id: c.id,
+                label: c.name,
+                done:
+                  playerTimeline.solved ||
+                  playerTimeline.solvedCharacterIds.includes(c.id),
+              })),
+            },
+            // One row per bucket: the detective and the suspects.
+            ledtradar: {
+              rows: [...(detective ? [detective] : []), ...suspects].map(
+                (c) => ({
+                  id: c.id,
+                  label: c.name,
+                  done:
+                    playerClue.solved ||
+                    playerClue.solvedCharacterIds.includes(c.id),
+                }),
+              ),
+            },
+            // The character sections: one row per character, checked once
+            // that character has been investigated.
+            ...Object.fromEntries(
+              (
+                [
+                  ["detektiven", detective ? [detective] : []],
+                  ["offret", victim ? [victim] : []],
+                  ["de-misstankta", suspects],
+                  ["vittnen", witnesses],
+                ] as const
+              ).map(([id, chars]) => [
+                id,
+                {
+                  rows: chars.map((c) => ({
+                    id: c.id,
+                    label: c.name,
+                    done: isCharacterInvestigated(c.id, progress),
+                  })),
+                },
+              ]),
+            ),
+          }}
         />
       </Section>
 
-      <Section
-        id="kartan"
-        title="Kartan"
-        locked={isLocked("kartan")}
-        footer={<SectionHelp sectionId="kartan" done={sectionDone.kartan} />}
-      >
-        <CityMap onDoneChange={setKartanDone} />
+      <Section id="kartan" title="Kartan" locked={isLocked("kartan")}>
+        <CityMap map={map} />
       </Section>
 
       <Section
         id="tidslinje"
         title="Tidslinje"
         locked={isLocked("tidslinje")}
-        footer={<SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />}
+        footer={
+          <SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />
+        }
       >
         <CaseTimeline
           events={playerTimeline.events}
@@ -119,7 +177,9 @@ export default function Overview() {
         id="ledtradar"
         title="Ledtrådar"
         locked={isLocked("ledtradar")}
-        footer={<SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />}
+        footer={
+          <SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />
+        }
       >
         <CluesCard
           assignments={playerClue.assignments}
@@ -134,7 +194,9 @@ export default function Overview() {
           id="detektiven"
           title="Detektiven"
           locked={isLocked("detektiven")}
-          footer={<SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />}
+          footer={
+            <SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />
+          }
         >
           <SpotlightCard
             character={detective}
@@ -168,7 +230,12 @@ export default function Overview() {
           id="de-misstankta"
           title="De misstänkta"
           locked={isLocked("de-misstankta")}
-          footer={<SectionHelp sectionId="de-misstankta" done={sectionDone["de-misstankta"]} />}
+          footer={
+            <SectionHelp
+              sectionId="de-misstankta"
+              done={sectionDone["de-misstankta"]}
+            />
+          }
         >
           <CharacterGrid
             characters={suspects}
@@ -185,7 +252,9 @@ export default function Overview() {
           id="vittnen"
           title="Vittnen"
           locked={isLocked("vittnen")}
-          footer={<SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />}
+          footer={
+            <SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />
+          }
         >
           <CharacterGrid
             characters={witnesses}

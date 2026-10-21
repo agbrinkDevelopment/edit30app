@@ -4,10 +4,11 @@ import { useGame } from "../context/GameContext";
 import {
   AlertTriangle,
   ArrowDown,
+  Check,
   ChevronDown,
-  ChevronRight,
   HelpCircleIcon,
   Pointer,
+  SkipForward,
   User,
 } from "lucide-react";
 import { formatElapsed, scrollToSection } from "../shared/helpers";
@@ -22,8 +23,14 @@ import { useIsMobile } from "../hooks/useIsMobile";
 // stops the timer and saves the guess, time and per-section outcome.
 export default function KillerGuessCard({
   steps,
+  subSteps = {},
 }: {
   steps: { id: string; label: string; done: boolean }[];
+  // Parts of a step listed under it, keyed by the step's id — e.g. each
+  // location on Kartan or each character's lane in Tidslinjen. A part with a
+  // sectionId has its own hint and skip; otherwise it's just done or not.
+  // `plain` steps (Kartan) have no hint or skip of their own either.
+  subSteps?: Record<string, SubSteps>;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -147,35 +154,62 @@ export default function KillerGuessCard({
       <div style={sharedStyles.guessArea}>
         <div style={sharedStyles.checklist}>
           {mysterySteps.map((step) => (
-            <div key={step.id} style={sharedStyles.checklistItem}>
+            <div
+              key={step.id}
+              style={{ ...sharedStyles.checklistItem, ...styles.stepCard }}
+            >
               <div
                 style={{
                   borderBottom: `1px solid ${theme.cardBorder}`,
-                  paddingBottom: 2,
-                  marginBottom: 8,
+                  padding: "5px 8px",
+                  marginBottom: 0,
+                  ...(subSteps[step.id] && styles.stepHeaderWithCheck),
                 }}
               >
                 {step.label}
+                {/* Just done or not (or skipped) — no hint circle here. */}
+                {subSteps[step.id] && (
+                  <PlainCheck
+                    done={step.done}
+                    skipped={!subSteps[step.id].plain && step.skipped}
+                  />
+                )}
               </div>
 
-              <div style={styles.stepRow}>
-                <SectionCheckCircle
-                  sectionId={step.id}
-                  done={step.done}
-                  baseStyle={sharedStyles.checkCircle}
-                  doneStyle={sharedStyles.checkCircleDone}
-                  iconSize={12}
-                />
-                <button
-                  type="button"
-                  style={styles.stepLink}
-                  onClick={() => scrollToSection(step.id)}
-                  title={`Gå till ${step.label}`}
-                  aria-label={`Gå till ${step.label}`}
+              {!subSteps[step.id] && (
+                <div style={styles.stepRow}>
+                  <SectionCheckCircle
+                    sectionId={step.id}
+                    done={step.done}
+                    baseStyle={sharedStyles.checkCircle}
+                    doneStyle={sharedStyles.checkCircleDone}
+                    iconSize={12}
+                  />
+                </div>
+              )}
+              {subSteps[step.id]?.rows.map((sub, i) => (
+                <div
+                  key={sub.id}
+                  style={{
+                    ...styles.subStepRow,
+                    // Alternating light gray and white rows.
+                    background: i % 2 === 0 ? SUB_ROW_GRAY : theme.cardBg,
+                  }}
                 >
-                  <ChevronRight size={18} color={theme.textFaint} />
-                </button>
-              </div>
+                  <span style={styles.subStepLabel}>{sub.label}</span>
+                  {sub.sectionId ? (
+                    <SectionCheckCircle
+                      sectionId={sub.sectionId}
+                      done={sub.done}
+                      baseStyle={styles.subStepCircle}
+                      doneStyle={sharedStyles.checkCircleDone}
+                      iconSize={10}
+                    />
+                  ) : (
+                    <PlainCheck done={sub.done} />
+                  )}
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -290,6 +324,37 @@ export default function KillerGuessCard({
   );
 }
 
+export interface SubSteps {
+  plain?: boolean;
+  rows: { id: string; label: string; done: boolean; sectionId?: string }[];
+}
+
+// A single small status circle: green with a check once done, red with a
+// skip icon if skipped instead.
+function PlainCheck({ done, skipped }: { done: boolean; skipped?: boolean }) {
+  return (
+    <span
+      style={{
+        ...styles.subStepCircle,
+        ...(done
+          ? sharedStyles.checkCircleDone
+          : skipped
+            ? { background: theme.skipped, borderColor: theme.skipped }
+            : {}),
+      }}
+    >
+      {done ? (
+        <Check size={10} color={theme.primaryText} />
+      ) : (
+        skipped && <SkipForward size={10} color={theme.primaryText} />
+      )}
+    </span>
+  );
+}
+
+// Slightly darker than the empty status circles, so they still show on it.
+const SUB_ROW_GRAY = "#efebe3";
+
 const styles: Record<string, React.CSSProperties> = {
   photoPlaceholder: {
     display: "flex",
@@ -317,15 +382,38 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    padding: "6px 8px",
   },
-  stepLink: {
-    background: "none",
-    border: "none",
-    padding: 4,
+  // Each section of the checklist in its own light gray-bordered card.
+  stepCard: {
+    border: `1px solid ${theme.cardBorder}`,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  // One row per part of a step (e.g. a location on Kartan), indented under
+  // the step with smaller status circles.
+  subStepRow: {
     display: "flex",
     alignItems: "center",
-    cursor: "pointer",
+    justifyContent: "space-between",
+    gap: 10,
+    padding: "5px 8px",
+    borderRadius: 0,
   },
+
+  // A step made of parts gets a heading that stands out from its rows.
+  stepHeaderWithCheck: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "5px 8px 5px 8px",
+    borderBottom: `1.5px solid ${theme.textFaint}`,
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: 700,
+  },
+  subStepLabel: { fontSize: 13, color: theme.textMuted },
+  subStepCircle: { ...sharedStyles.checkCircle, width: 20, height: 20 },
   // Pointing hand next to the "Peka ut" label.
   guessBtnContent: {
     display: "inline-flex",

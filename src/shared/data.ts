@@ -38,4 +38,8 @@ export const MYSTERY_SECTIONS = [
 
 export const POOL_ID = "pool";
 
+// The section id of a location on Kartan (see useMapLocations); each has its
+// own hint and skip.
+export const mapSectionId = (characterId: string) => `kartan:${characterId}`;
+
 export const INVESTIGATION_SECTIONS = ["kartan", "tidslinje", "evidence"];

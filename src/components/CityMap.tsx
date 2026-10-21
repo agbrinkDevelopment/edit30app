@@ -1,16 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Check } from "lucide-react";
-import { useGame } from "../context/GameContext";
 import { theme } from "../theme";
 import SectionCheckCircle from "./SectionCheckCircle";
+import SectionHelp from "./SectionHelp";
 import { sharedStyles } from "../shared/styles";
-import { api, fileSrc } from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { fileSrc } from "../api/client";
 import ApartmentGame from "./ApartmentGame";
-
-const PIN_ORDER = ["victim", "detective"];
-const pinRank = (role: string) =>
-  PIN_ORDER.includes(role) ? PIN_ORDER.indexOf(role) : PIN_ORDER.length;
+import { MapLocations } from "../hooks/useMapLocations";
 
 function tightBbox(lat: number, lon: number) {
   return `${lon - 0.004},${lat - 0.002},${lon + 0.004},${lat + 0.002}`;
@@ -22,85 +18,16 @@ function osmEmbedUrl(lat: number, lon: number) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marker)}`;
 }
 
-export default function CityMap({
-  onDoneChange,
-}: {
-  // Reports whether every location is checked, i.e. Kartan is done.
-  onDoneChange?: (done: boolean) => void;
-}) {
-  const { game } = useGame();
+export default function CityMap({ map }: { map: MapLocations }) {
+  const { pins, allDone, setDone } = map;
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // Edit, Sten (the detective) and every suspect get a location — even
-  // before it's been placed on the map. Witnesses don't. Characters at the
-  // same coordinates share one pill and section (e.g. Kenta and Peter).
-  const characters = game.characters
-    .filter((c) => ["victim", "detective", "suspect"].includes(c.role))
-    // Edit (the victim) first, then the detective
-    .sort((a, b) => pinRank(a.role) - pinRank(b.role));
-  const groups = new Map<string, typeof characters>();
-  for (const c of characters) {
-    const key = c.location ? `${c.location.lat},${c.location.lon}` : c.id;
-    groups.set(key, [...(groups.get(key) ?? []), c]);
-  }
-  const pins = Array.from(groups.values()).map((members) => ({
-    id: members[0].id,
-    members,
-    label: members.map((m) => m.initials).join(" & "),
-    role: members[0].role,
-    name: members.map((m) => m.name).join(" & "),
-    color: theme.roleColors[members[0].role] as string | undefined,
-    location: members[0].location,
-  }));
 
   // Starts on the first pill (Edit).
   const selected = pins.find((p) => p.id === selectedId) ?? pins[0];
   // Edit's apartment game is the only minigame so far; the other locations
   // get theirs later.
   const hasGame = selected?.role === "victim";
-  // Characters whose location the player has completed, saved per player in
-  // the backend (player_map).
-  const { playerId } = useAuth();
-  const [solvedIds, setSolvedIds] = useState<string[]>([]);
-  useEffect(() => {
-    setSolvedIds([]);
-    if (!playerId) return;
-    let cancelled = false;
-    api
-      .getPlayerMap(playerId)
-      .then((ids) => {
-        if (!cancelled) setSolvedIds(ids);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [playerId]);
-  // A location is checked when every character at it is.
-  const isSolved = (pin: (typeof pins)[number]) =>
-    pin.members.every((m) => solvedIds.includes(m.id));
-  const gameSolved = !!selected && isSolved(selected);
-  // Kartan counts as done once every location is checked.
-  const allSolved = pins.length > 0 && pins.every(isSolved);
-  useEffect(() => {
-    onDoneChange?.(allSolved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSolved]);
-  // Checks or unchecks a location, i.e. every character at it.
-  const setSolved = (pin: (typeof pins)[number], solved: boolean) => {
-    const memberIds = pin.members.map((m) => m.id);
-    setSolvedIds((ids) =>
-      solved
-        ? [...ids, ...memberIds.filter((id) => !ids.includes(id))]
-        : ids.filter((x) => !memberIds.includes(x)),
-    );
-    if (!playerId) return;
-    for (const id of memberIds) {
-      api
-        .setPlayerMapLocation(playerId, id, solved)
-        .catch((err) => console.error("Could not save map progress:", err));
-    }
-  };
+  const gameSolved = !!selected?.done;
 
   return (
     <div>
@@ -112,14 +39,17 @@ export default function CityMap({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <SectionCheckCircle
-            sectionId="kartan"
-            done={allSolved}
-            baseStyle={sharedStyles.pillCheckCircle}
-            doneStyle={sharedStyles.pillCheckCircleDone}
-            iconSize={12}
-            title={allSolved ? "Klar" : "Bocka av alla platser på kartan"}
-          />
+          {/* Kartan has no hint or skip of its own: it's done once every
+              location is checked or skipped. */}
+          <span
+            style={{
+              ...sharedStyles.pillCheckCircle,
+              ...(allDone ? sharedStyles.pillCheckCircleDone : {}),
+            }}
+            title={allDone ? "Klar" : "Bocka av alla platser på kartan"}
+          >
+            {allDone && <Check size={12} color={theme.primaryText} />}
+          </span>
         </div>
         <div className="citymap-tabs" style={styles.tabs}>
           {pins.map((p) => (
@@ -137,7 +67,7 @@ export default function CityMap({
                   overlapping the same way. */}
               <span style={styles.tabAvatars}>
                 {p.members.map((m, i) =>
-                  isSolved(p) ? (
+                  p.done ? (
                     <span
                       key={m.id}
                       style={{
@@ -173,17 +103,16 @@ export default function CityMap({
       </div>
       {selected && (
         <div style={styles.card}>
-          {/* This character's location: checked once it's done. */}
-          <span
-            style={{
-              ...sharedStyles.pillCheckCircle,
-              ...(gameSolved ? sharedStyles.pillCheckCircleDone : {}),
-              ...styles.cardCheck,
-            }}
+          {/* This location's status: hint used, and done or skipped. */}
+          <SectionCheckCircle
+            sectionId={selected.sectionId}
+            done={gameSolved}
+            baseStyle={sharedStyles.pillCheckCircle}
+            doneStyle={sharedStyles.pillCheckCircleDone}
+            iconSize={12}
             title={gameSolved ? "Klar" : "Inte klar än"}
-          >
-            {gameSolved && <Check size={12} color={theme.primaryText} />}
-          </span>
+            wrapperStyle={styles.cardCheck}
+          />
           <div style={styles.body}>
             <div className="citymap-intro" style={styles.intro}>
               {selected.members.some((m) => m.imageUrl) && (
@@ -235,7 +164,7 @@ export default function CityMap({
                   <span style={styles.dividerLabel}>Minispelet</span>
                 </div>
                 <ApartmentGame
-                  onExit={() => setSolved(selected, true)}
+                  onExit={() => setDone(selected, true)}
                   style={styles.game}
                 />
                 {gameSolved && (
@@ -248,7 +177,7 @@ export default function CityMap({
             {/* Marks the location done by hand, also where there's a game. */}
             <button
               type="button"
-              onClick={() => setSolved(selected, !gameSolved)}
+              onClick={() => setDone(selected, !gameSolved)}
               style={{
                 ...styles.validateBtn,
                 ...(gameSolved ? styles.validateBtnDone : {}),
@@ -262,6 +191,8 @@ export default function CityMap({
                 "Markera som klar"
               )}
             </button>
+            {/* Visa ledtråd / Hoppa över for this location. */}
+            <SectionHelp sectionId={selected.sectionId} done={gameSolved} />
           </div>
         </div>
       )}
@@ -354,7 +285,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     gap: 16,
     alignItems: "flex-start",
-    paddingRight: 36,
+    paddingRight: 70,
   },
   introImage: {
     width: 120,
