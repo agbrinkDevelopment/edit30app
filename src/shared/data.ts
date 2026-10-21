@@ -2,6 +2,7 @@ import {
   Fingerprint,
   Footprints,
   HelpCircle,
+  Info,
   MapPin,
   History,
   Microscope,
@@ -13,13 +14,14 @@ import {
 
 export const NAV_ITEMS = [
   { id: "mordaren", label: "Mördaren", icon: HelpCircle },
-  { id: "kartan", label: "Kartan", icon: MapPin },
-  { id: "tidslinje", label: "Tidslinje", icon: History },
-  { id: "ledtradar", label: "Ledtrådar", icon: Search },
+  { id: "fallet", label: "Om fallet", icon: Info },
   { id: "detektiven", label: "Detektiven", icon: Fingerprint },
   { id: "offret", label: "Offret", icon: Skull },
   { id: "de-misstankta", label: "De misstänkta", icon: Users },
   { id: "vittnen", label: "Vittnen", icon: Eye },
+  { id: "kartan", label: "Kartan", icon: MapPin },
+  { id: "tidslinje", label: "Tidslinje", icon: History },
+  { id: "ledtradar", label: "Ledtrådar", icon: Search },
 ];
 
 export const PROGRESS_KEY = "mystery-progress";

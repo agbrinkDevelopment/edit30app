@@ -63,7 +63,11 @@ export default function CaseTimeline({
   onAddEvent,
   onUpdateEvent,
   onRemoveEvent,
+  readOnly = false,
 }: {
+  // Finished or skipped: still scrollable and events can be opened, but
+  // nothing can be added, edited or removed.
+  readOnly?: boolean;
   events: PlayerTimelineEvent[];
   solved: boolean;
   // Characters whose lane is complete; their avatar gets a check badge.
@@ -204,9 +208,11 @@ export default function CaseTimeline({
           />
         </div>
         <div style={styles.headerSpacer} />
-        <button style={styles.addEventBtn} onClick={startCreate}>
-          <Plus size={15} /> Händelse
-        </button>
+        {!readOnly && (
+          <button style={styles.addEventBtn} onClick={startCreate}>
+            <Plus size={15} /> Händelse
+          </button>
+        )}
       </div>
 
       <div style={styles.card}>
@@ -485,25 +491,27 @@ export default function CaseTimeline({
               <div style={styles.detailTime}>
                 <Clock size={12} /> {selected.time || "Okänd tid"}
               </div>
-              <div style={styles.detailActions}>
-                <button
-                  style={sharedStyles.iconBtn}
-                  onClick={() => startEdit(selected)}
-                  title="Redigera"
-                >
-                  <Edit2 size={15} />
-                </button>
-                <button
-                  style={{ ...sharedStyles.iconBtn, color: theme.primary }}
-                  onClick={() => {
-                    onRemoveEvent(selected.id);
-                    setSelectedId(null);
-                  }}
-                  title="Ta bort"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
+              {!readOnly && (
+                <div style={styles.detailActions}>
+                  <button
+                    style={sharedStyles.iconBtn}
+                    onClick={() => startEdit(selected)}
+                    title="Redigera"
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button
+                    style={{ ...sharedStyles.iconBtn, color: theme.primary }}
+                    onClick={() => {
+                      onRemoveEvent(selected.id);
+                      setSelectedId(null);
+                    }}
+                    title="Ta bort"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )}
             </div>
             <p style={styles.detailDesc}>
               {selected.description || "Ingen beskrivning tillagd."}

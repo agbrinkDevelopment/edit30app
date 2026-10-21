@@ -40,7 +40,8 @@ export default function CharacterGrid({
               borderLeft: `4px solid ${roleColor(c.role)}`,
             }}
           >
-            <div
+            {/* Information only for now: no status circle.
+<div
               style={sharedStyles.cardCheckBtn}
               title={
                 done
@@ -55,7 +56,7 @@ export default function CharacterGrid({
                 doneStyle={sharedStyles.cardCheckCircleDone}
                 iconSize={11}
               />
-            </div>
+            </div> */}
             <div style={{ ...sharedStyles.victimHeader, marginBottom: 0 }}>
               <div style={sharedStyles.victimPhoto}>
                 {c.imageUrl ? (
@@ -88,13 +89,13 @@ export default function CharacterGrid({
               </div>
             </div>
 
+            {/* Information only for now: no "Utredningen" part.
             <div style={sharedStyles.investigationSection}>
               <h3 style={sharedStyles.investigationTitle}>Utredningen</h3>
               <div style={sharedStyles.investigationSub}>
                 <SubsectionHeader
                   title="Kartan"
-                  checked={kartanDone}
-                  onToggle={() => onToggleDone(subsectionKey(c.id, "kartan"))}
+                  // checked / onToggle: information only for now
                 />
                 {c.location ? (
                   <p style={sharedStyles.investigationText}>
@@ -110,18 +111,14 @@ export default function CharacterGrid({
               <div style={sharedStyles.investigationSub}>
                 <SubsectionHeader
                   title="Fysiskt bevis"
-                  checked={evidenceDone}
-                  onToggle={() => onToggleDone(subsectionKey(c.id, "evidence"))}
+                  // checked / onToggle: information only for now
                 />
                 todo
               </div>
               <div style={sharedStyles.investigationSub}>
                 <SubsectionHeader
                   title="Tidslinje"
-                  checked={tidslinjeDone}
-                  onToggle={() =>
-                    onToggleDone(subsectionKey(c.id, "tidslinje"))
-                  }
+                  // checked / onToggle: information only for now
                 />
                 <Timeline
                   events={game.timelineEvents.filter(
@@ -136,7 +133,7 @@ export default function CharacterGrid({
               >
                 Utred <ChevronRight size={14} />
               </button>
-            </div>
+            </div> */}
           </div>
         );
       })}

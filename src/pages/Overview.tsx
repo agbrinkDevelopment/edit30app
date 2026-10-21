@@ -1,4 +1,5 @@
 import React from "react";
+import { theme } from "../theme";
 import { useGame } from "../context/GameContext";
 import { useAuth } from "../context/AuthContext";
 import { usePlayerTimeline } from "../hooks/usePlayerTimeline";
@@ -89,10 +90,14 @@ export default function Overview() {
     >
       <Section id="mordaren" title="Mördaren" style={{ marginTop: 0 }}>
         <KillerGuessCard
-          steps={MYSTERY_SECTIONS.map((s) => ({
-            ...s,
-            done: sectionDone[s.id],
-          }))}
+          steps={MYSTERY_SECTIONS
+            // The character sections are information only for now, so
+            // they're not part of the checklist.
+            .filter((s) => !INFO_ONLY_SECTIONS.includes(s.id))
+            .map((s) => ({
+              ...s,
+              done: sectionDone[s.id],
+            }))}
           subSteps={{
             kartan: {
               plain: true,
@@ -126,77 +131,49 @@ export default function Overview() {
                 }),
               ),
             },
+            // (Character sections are information only for now.)
             // The character sections: one row per character, checked once
             // that character has been investigated.
-            ...Object.fromEntries(
-              (
-                [
-                  ["detektiven", detective ? [detective] : []],
-                  ["offret", victim ? [victim] : []],
-                  ["de-misstankta", suspects],
-                  ["vittnen", witnesses],
-                ] as const
-              ).map(([id, chars]) => [
-                id,
-                {
-                  rows: chars.map((c) => ({
-                    id: c.id,
-                    label: c.name,
-                    done: isCharacterInvestigated(c.id, progress),
-                  })),
-                },
-              ]),
-            ),
+            // ...Object.fromEntries(
+            // (
+            // [
+            // ["detektiven", detective ? [detective] : []],
+            // ["offret", victim ? [victim] : []],
+            // ["de-misstankta", suspects],
+            // ["vittnen", witnesses],
+            // ] as const
+            // ).map(([id, chars]) => [
+            // id,
+            // {
+            // rows: chars.map((c) => ({
+            // id: c.id,
+            // label: c.name,
+            // done: isCharacterInvestigated(c.id, progress),
+            // })),
+            // },
+            // ]),
+            // ),
           }}
         />
       </Section>
 
-      <Section id="kartan" title="Kartan" locked={isLocked("kartan")}>
-        <CityMap map={map} />
-      </Section>
-
-      <Section
-        id="tidslinje"
-        title="Tidslinje"
-        locked={isLocked("tidslinje")}
-        footer={
-          <SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />
-        }
-      >
-        <CaseTimeline
-          events={playerTimeline.events}
-          solved={playerTimeline.solved}
-          solvedCharacterIds={playerTimeline.solvedCharacterIds}
-          onAddEvent={playerTimeline.addEvent}
-          onUpdateEvent={playerTimeline.updateEvent}
-          onRemoveEvent={playerTimeline.removeEvent}
-        />
-      </Section>
-
-      <Section
-        id="ledtradar"
-        title="Ledtrådar"
-        locked={isLocked("ledtradar")}
-        footer={
-          <SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />
-        }
-      >
-        <CluesCard
-          assignments={playerClue.assignments}
-          solved={playerClue.solved}
-          solvedCharacterIds={playerClue.solvedCharacterIds}
-          onAssign={playerClue.assign}
-        />
+      <Section id="fallet" title="Om fallet">
+        <div style={styles.caseCard}>
+          <p style={styles.caseText}>
+            {game.description || "Här kommer informationen om fallet att stå."}
+          </p>
+        </div>
       </Section>
 
       {detective && (
         <Section
           id="detektiven"
           title="Detektiven"
-          locked={isLocked("detektiven")}
+          // Information only for now: no locking or hint/skip.
+          /* locked={isLocked("detektiven")}
           footer={
             <SectionHelp sectionId="detektiven" done={sectionDone.detektiven} />
-          }
+          } */
         >
           <SpotlightCard
             character={detective}
@@ -212,8 +189,9 @@ export default function Overview() {
         <Section
           id="offret"
           title="Offret"
-          locked={isLocked("offret")}
-          footer={<SectionHelp sectionId="offret" done={sectionDone.offret} />}
+          // Information only for now: no locking or hint/skip.
+          /* locked={isLocked("offret")}
+          footer={<SectionHelp sectionId="offret" done={sectionDone.offret} />} */
         >
           <SpotlightCard
             character={victim}
@@ -229,13 +207,14 @@ export default function Overview() {
         <Section
           id="de-misstankta"
           title="De misstänkta"
-          locked={isLocked("de-misstankta")}
+          // Information only for now: no locking or hint/skip.
+          /* locked={isLocked("de-misstankta")}
           footer={
             <SectionHelp
               sectionId="de-misstankta"
               done={sectionDone["de-misstankta"]}
             />
-          }
+          } */
         >
           <CharacterGrid
             characters={suspects}
@@ -251,10 +230,11 @@ export default function Overview() {
         <Section
           id="vittnen"
           title="Vittnen"
-          locked={isLocked("vittnen")}
+          // Information only for now: no locking or hint/skip.
+          /* locked={isLocked("vittnen")}
           footer={
             <SectionHelp sectionId="vittnen" done={sectionDone.vittnen} />
-          }
+          } */
         >
           <CharacterGrid
             characters={witnesses}
@@ -265,6 +245,66 @@ export default function Overview() {
           />
         </Section>
       )}
+      <Section id="kartan" title="Kartan" locked={isLocked("kartan")}>
+        <CityMap map={map} />
+      </Section>
+
+      <Section
+        id="tidslinje"
+        title="Tidslinje"
+        footer={
+          <SectionHelp sectionId="tidslinje" done={sectionDone.tidslinje} />
+        }
+      >
+        <CaseTimeline
+          events={playerTimeline.events}
+          solved={playerTimeline.solved}
+          solvedCharacterIds={playerTimeline.solvedCharacterIds}
+          onAddEvent={playerTimeline.addEvent}
+          onUpdateEvent={playerTimeline.updateEvent}
+          onRemoveEvent={playerTimeline.removeEvent}
+          // Not covered when finished, so it can still be scrolled and its
+          // events opened — just no longer changed.
+          readOnly={isLocked("tidslinje")}
+        />
+      </Section>
+
+      <Section
+        id="ledtradar"
+        title="Ledtrådar"
+        footer={
+          <SectionHelp sectionId="ledtradar" done={sectionDone.ledtradar} />
+        }
+      >
+        <CluesCard
+          assignments={playerClue.assignments}
+          solved={playerClue.solved}
+          solvedCharacterIds={playerClue.solvedCharacterIds}
+          onAssign={playerClue.assign}
+          // Not covered when finished, so it can still be scrolled — just
+          // no longer changed.
+          readOnly={isLocked("ledtradar")}
+        />
+      </Section>
     </div>
   );
 }
+
+// Sections that are pure information for now (no checklist, hint or skip).
+const INFO_ONLY_SECTIONS = ["detektiven", "offret", "de-misstankta", "vittnen"];
+
+const styles: Record<string, React.CSSProperties> = {
+  caseCard: {
+    background: theme.cardBg,
+    border: `1px solid ${theme.textFaint}`,
+    borderRadius: 14,
+    padding: "16px 20px",
+  },
+  caseText: {
+    margin: 0,
+    fontSize: 15,
+    lineHeight: 1.6,
+    color: theme.text,
+    whiteSpace: "pre-line",
+  },
+};

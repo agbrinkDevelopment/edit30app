@@ -21,7 +21,10 @@ export default function CluesCard({
   solved,
   solvedCharacterIds,
   onAssign,
+  readOnly = false,
 }: {
+  // Finished or skipped: still scrollable, but items can no longer be moved.
+  readOnly?: boolean;
   assignments: Record<string, string | null>;
   solved: boolean;
   solvedCharacterIds: string[];
@@ -40,8 +43,10 @@ export default function CluesCard({
   const itemsIn = (characterId: string) =>
     game.clues.filter((item) => assignments[item.id] === characterId);
 
-  const assignTo = (itemId: string, bucketId: string) =>
+  const assignTo = (itemId: string, bucketId: string) => {
+    if (readOnly) return;
     onAssign(itemId, bucketId === POOL_ID ? null : bucketId);
+  };
 
   const handleBucketDrop = (
     e: React.DragEvent<HTMLDivElement>,
@@ -85,10 +90,10 @@ export default function CluesCard({
     return (
       <div
         key={item.id}
-        draggable={!isMobile}
+        draggable={!isMobile && !readOnly}
         onDragStart={(e) => e.dataTransfer.setData("text/plain", item.id)}
         onClick={(e) => {
-          if (!isMobile) return;
+          if (!isMobile || readOnly) return;
           // Don't let the tap also count as a tap on the surrounding bucket.
           e.stopPropagation();
           setSelectedId(selected ? null : item.id);
@@ -96,6 +101,7 @@ export default function CluesCard({
         style={{
           ...sharedStyles.sortItem,
           ...(isMobile ? { cursor: "pointer" } : {}),
+          ...(readOnly ? { cursor: "default" } : {}),
           ...(selected ? styles.sortItemSelected : {}),
         }}
       >

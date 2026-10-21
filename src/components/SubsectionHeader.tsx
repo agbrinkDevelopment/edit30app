@@ -9,26 +9,30 @@ export default function SubsectionHeader({
   onToggle,
 }: {
   title: string;
-  checked: boolean;
-  onToggle: () => void;
+  // Without these it's just the title (the cards are information only for
+  // now, see SpotlightCard / CharacterGrid).
+  checked?: boolean;
+  onToggle?: () => void;
 }) {
   return (
     <div style={sharedStyles.subsectionHeaderRow}>
       <h4 style={sharedStyles.investigationSubtitle}>{title}</h4>
-      <button
-        style={sharedStyles.subCheckBtn}
-        onClick={onToggle}
-        title={checked ? "Markera som oläst" : "Markera som klar"}
-      >
-        <span
-          style={{
-            ...sharedStyles.subCheckCircle,
-            ...(checked ? sharedStyles.subCheckCircleDone : {}),
-          }}
+      {onToggle && (
+        <button
+          style={sharedStyles.subCheckBtn}
+          onClick={onToggle}
+          title={checked ? "Markera som oläst" : "Markera som klar"}
         >
-          {checked && <Check size={9} color={theme.primaryText} />}
-        </span>
-      </button>
+          <span
+            style={{
+              ...sharedStyles.subCheckCircle,
+              ...(checked ? sharedStyles.subCheckCircleDone : {}),
+            }}
+          >
+            {checked && <Check size={9} color={theme.primaryText} />}
+          </span>
+        </button>
+      )}
     </div>
   );
 }

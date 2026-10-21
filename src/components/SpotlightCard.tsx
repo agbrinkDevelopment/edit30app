@@ -37,7 +37,8 @@ export default function SpotlightCard({
         borderLeft: `4px solid ${roleColor(character.role)}`,
       }}
     >
-      <div
+      {/* Information only for now: no status circle.
+<div
         style={sharedStyles.cardCheckBtn}
         title={
           done
@@ -52,7 +53,7 @@ export default function SpotlightCard({
           doneStyle={sharedStyles.cardCheckCircleDone}
           iconSize={11}
         />
-      </div>
+      </div> */}
       <div style={sharedStyles.victimHeader}>
         <div style={sharedStyles.victimPhoto}>
           {character.imageUrl ? (
@@ -71,7 +72,10 @@ export default function SpotlightCard({
               {character.name}
             </span>
             <span
-              style={{ ...sharedStyles.badge, background: roleColor(character.role) }}
+              style={{
+                ...sharedStyles.badge,
+                background: roleColor(character.role),
+              }}
             >
               {theme.roleLabels[character.role] ?? character.role}
             </span>
@@ -82,13 +86,13 @@ export default function SpotlightCard({
         </div>
       </div>
 
+      {/* Information only for now: no "Utredningen" part.
       <div style={sharedStyles.investigationSection}>
         <h3 style={sharedStyles.investigationTitle}>Utredningen</h3>
         <div style={sharedStyles.investigationSub}>
           <SubsectionHeader
             title="Kartan"
-            checked={kartanDone}
-            onToggle={() => onToggleDone(subsectionKey(character.id, "kartan"))}
+            // checked / onToggle: information only for now
           />
           {character.location ? (
             <p style={sharedStyles.investigationText}>
@@ -104,20 +108,14 @@ export default function SpotlightCard({
         <div style={sharedStyles.investigationSub}>
           <SubsectionHeader
             title="Fysiskt bevis"
-            checked={evidenceDone}
-            onToggle={() =>
-              onToggleDone(subsectionKey(character.id, "evidence"))
-            }
+            // checked / onToggle: information only for now
           />
           todo
         </div>
         <div style={sharedStyles.investigationSub}>
           <SubsectionHeader
             title="Tidslinje"
-            checked={tidslinjeDone}
-            onToggle={() =>
-              onToggleDone(subsectionKey(character.id, "tidslinje"))
-            }
+            // checked / onToggle: information only for now
           />
           <Timeline
             events={game.timelineEvents.filter(
@@ -132,7 +130,7 @@ export default function SpotlightCard({
         >
           Utred <ChevronRight size={14} />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
