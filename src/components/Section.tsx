@@ -2,15 +2,10 @@ import React from "react";
 import { styles as sharedStyles } from "../shared/styles";
 
 // A titled Overview section. When `locked` (the player has finished or
-// skipped it), the content is blurred and can no longer be interacted with.
-// `footer` (the hint/skip area) is rendered outside the blur so a revealed
-// hint or the "Överhoppad" tag stays readable.
-//
-// The blur is an overlay with backdrop-filter rather than a filter on the
-// content: a filter would blur every descendant, whereas this lets the
-// status circles (.section-check) be raised above the overlay and stay sharp
-// — see the .section-locked rule in App.tsx. The overlay also swallows all
-// clicks, so nothing underneath can be changed.
+// skipped it), the content stays visible but can no longer be interacted
+// with: a transparent overlay swallows all clicks, so nothing underneath can
+// be changed. The status circles (.section-check) are raised above it — see
+// the .section-locked rule in App.tsx.
 export default function Section({
   id,
   title,
@@ -54,8 +49,6 @@ const styles: Record<string, React.CSSProperties> = {
     // Same rounding as the section cards (sharedStyles.card).
     borderRadius: 14,
     margin: -4,
-    backdropFilter: "blur(1.5px)",
-    WebkitBackdropFilter: "blur(1.5px)",
     cursor: "not-allowed",
   },
 };

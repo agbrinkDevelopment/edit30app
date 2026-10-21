@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import {
   ArrowLeft,
   Binoculars,
@@ -8,10 +9,12 @@ import {
   RotateCcw,
   Trees,
   TreesIcon,
+  X,
 } from "lucide-react";
 import { theme } from "../theme";
-import { sharedStyles } from "../shared/styles";
+import { sharedStyles, styles as pageStyles } from "../shared/styles";
 import Modal from "./Modal";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 // A small Nancy Drew–style point-and-click game: the player walks through
 // photos of the apartment, clicking on things to move closer, open doors and
@@ -595,7 +598,7 @@ export default function ApartmentGame({
     }
     if (h.exit && onExit) {
       if (h.exitCode) setPuzzle("code");
-      else onExit();
+      else exit();
       return;
     }
     setSaid(h.say ?? null);
@@ -643,6 +646,142 @@ export default function ApartmentGame({
     (h) => !h.item || !progress.items.includes(h.item),
   );
 
+  // On mobile the game opens in a full-screen layer; the page itself only
+  // shows the pocket and a button to open it. The progress lives in this
+  // component, so closing the layer keeps it.
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const fullscreen = isMobile && open;
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [fullscreen]);
+
+  const exit = () => {
+    setOpen(false);
+    onExit?.();
+  };
+
+  // The pocket: the items to find, and those found so far.
+  const inventory = (
+    <div>
+      <div style={styles.inventoryTitle}>Föremål</div>
+      <div style={styles.inventory}>
+        {(Object.keys(ITEMS) as ItemId[]).map((id) => {
+          const found = progress.items.includes(id);
+          const { icon: Icon, name, description } = ITEMS[id];
+          return (
+            <button
+              key={id}
+              type="button"
+              disabled={!found}
+              onClick={() => {
+                if (id === "katt" && !progress.rebusSolved) {
+                  setPuzzle("rebus");
+                  return;
+                }
+                setSaid(
+                  id === "katt"
+                    ? `${description} Rebusen på baksidan: katedralen. Du finner koden i katedralen.`
+                    : description,
+                );
+              }}
+              title={found ? name : "Inte hittad än"}
+              style={{
+                ...styles.slot,
+                ...(found ? styles.slotFound : {}),
+              }}
+            >
+              {found ? (
+                <>
+                  <Icon size={22} color={theme.accent} />
+                  <span style={styles.slotName}>{name}</span>
+                </>
+              ) : (
+                <span style={styles.slotEmpty}>?</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const game = (
+    <div style={styles.layout}>
+      <div style={styles.viewer}>
+        {photos.prev && (
+          <img
+            src={photos.prev}
+            alt=""
+            style={styles.photo}
+            draggable={false}
+          />
+        )}
+        <img
+          key={photos.cur}
+          className="lagenheten-photo"
+          src={photos.cur}
+          alt=""
+          style={styles.photo}
+          draggable={false}
+        />
+        {!frame &&
+          visibleHotspots.map((h, i) => (
+            <button
+              key={`${progress.scene}-${i}`}
+              type="button"
+              aria-label={h.label}
+              title={h.label}
+              onClick={() => onHotspot(h)}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                ...styles.hotspot,
+                left: `${h.x}%`,
+                top: `${h.y}%`,
+                width: `${h.w}%`,
+                height: `${h.h}%`,
+                cursor: h.item ? "grab" : h.to ? "zoom-in" : "help",
+                ...(hovered === i ? styles.hotspotHover : {}),
+              }}
+            />
+          ))}
+        {scene.back && !frame && (
+          <button type="button" onClick={goBack} style={styles.backBtn}>
+            <ArrowLeft size={16} /> Tillbaka
+          </button>
+        )}
+      </div>
+
+      <div style={styles.side}>
+        <div style={styles.narration}>
+          {said ?? scene.text}
+          {hovered !== null && visibleHotspots[hovered] && (
+            <div style={styles.hint}>{visibleHotspots[hovered].label}</div>
+          )}
+        </div>
+
+        {inventory}
+
+        {allFound && (
+          <div style={styles.done}>
+            Du har hittat allt som gömts i lägenheten. Hur kan kikaren och
+            katt-rebusen ta mig närmare mordmysteriumet?
+          </div>
+        )}
+
+        <button type="button" onClick={restart} style={styles.restartBtn}>
+          <RotateCcw size={14} /> Börja om
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ ...sharedStyles.card, ...style }}>
       <style>{`
@@ -653,114 +792,38 @@ export default function ApartmentGame({
         }
       `}</style>
 
-      <div style={styles.layout}>
-        <div style={styles.viewer}>
-          {photos.prev && (
-            <img
-              src={photos.prev}
-              alt=""
-              style={styles.photo}
-              draggable={false}
-            />
-          )}
-          <img
-            key={photos.cur}
-            className="lagenheten-photo"
-            src={photos.cur}
-            alt=""
-            style={styles.photo}
-            draggable={false}
-          />
-          {!frame &&
-            visibleHotspots.map((h, i) => (
-              <button
-                key={`${progress.scene}-${i}`}
-                type="button"
-                aria-label={h.label}
-                title={h.label}
-                onClick={() => onHotspot(h)}
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-                style={{
-                  ...styles.hotspot,
-                  left: `${h.x}%`,
-                  top: `${h.y}%`,
-                  width: `${h.w}%`,
-                  height: `${h.h}%`,
-                  cursor: h.item ? "grab" : h.to ? "zoom-in" : "help",
-                  ...(hovered === i ? styles.hotspotHover : {}),
-                }}
-              />
-            ))}
-          {scene.back && !frame && (
-            <button type="button" onClick={goBack} style={styles.backBtn}>
-              <ArrowLeft size={16} /> Tillbaka
-            </button>
-          )}
-        </div>
-
-        <div style={styles.side}>
-          <div style={styles.narration}>
-            {said ?? scene.text}
-            {hovered !== null && visibleHotspots[hovered] && (
-              <div style={styles.hint}>{visibleHotspots[hovered].label}</div>
-            )}
-          </div>
-
-          <div>
-            <div style={styles.inventoryTitle}>Fickan</div>
-            <div style={styles.inventory}>
-              {(Object.keys(ITEMS) as ItemId[]).map((id) => {
-                const found = progress.items.includes(id);
-                const { icon: Icon, name, description } = ITEMS[id];
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    disabled={!found}
-                    onClick={() => {
-                      if (id === "katt" && !progress.rebusSolved) {
-                        setPuzzle("rebus");
-                        return;
-                      }
-                      setSaid(
-                        id === "katt"
-                          ? `${description} Rebusen på baksidan: katedralen. Du finner koden i katedralen.`
-                          : description,
-                      );
-                    }}
-                    title={found ? name : "Inte hittad än"}
-                    style={{
-                      ...styles.slot,
-                      ...(found ? styles.slotFound : {}),
-                    }}
-                  >
-                    {found ? (
-                      <>
-                        <Icon size={22} color={theme.accent} />
-                        <span style={styles.slotName}>{name}</span>
-                      </>
-                    ) : (
-                      <span style={styles.slotEmpty}>?</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {allFound && (
-            <div style={styles.done}>
-              Du har hittat allt som gömts i lägenheten. Hur kan kikaren och
-              katt-rebusen ta mig närmare mordmysteriumet?
-            </div>
-          )}
-
-          <button type="button" onClick={restart} style={styles.restartBtn}>
-            <RotateCcw size={14} /> Börja om
+      {isMobile ? (
+        <>
+          {inventory}
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            style={styles.openBtn}
+          >
+            Starta utredning
           </button>
-        </div>
-      </div>
+          {fullscreen &&
+            ReactDOM.createPortal(
+              <div style={styles.fullscreen}>
+                <div style={styles.fullscreenTop}>
+                  <span style={styles.fullscreenTitle}>Utredning</span>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    style={styles.fullscreenClose}
+                    aria-label="Stäng"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                {game}
+              </div>,
+              document.body,
+            )}
+        </>
+      ) : (
+        game
+      )}
       {puzzle === "rebus" && (
         <AnswerModal
           title="Baksidan av kattbrickan"
@@ -790,7 +853,7 @@ export default function ApartmentGame({
           onClose={() => setPuzzle(null)}
           onSolved={() => {
             setPuzzle(null);
-            onExit?.();
+            exit();
           }}
         >
           <p style={styles.puzzleText}>Ange koden för att låsa upp datorn.</p>
@@ -1027,6 +1090,54 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px 14px",
     fontSize: 14,
     lineHeight: 1.5,
+  },
+  openBtn: {
+    alignSelf: "flex-start",
+    marginTop: 12,
+    background: theme.accent,
+    color: theme.primaryText,
+    border: "none",
+    borderRadius: 20,
+    padding: "8px 18px",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  // Covers the whole screen; below Modal (1000) so the puzzles open on top.
+  fullscreen: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 950,
+    // It's rendered outside the app's root, so it sets the app's background,
+    // font and text colour itself.
+    background: theme.cardBg,
+    fontFamily: theme.fontSerif,
+    color: theme.text,
+    overflowY: "auto",
+    padding: "0 16px 24px",
+    boxSizing: "border-box",
+  },
+  fullscreenTop: {
+    position: "sticky",
+    top: 0,
+    zIndex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 0",
+    marginBottom: 4,
+    background: theme.cardBg,
+  },
+  // Same look as the section headers.
+  fullscreenTitle: { ...pageStyles.sectionTitle, marginBottom: 0 },
+  fullscreenClose: {
+    display: "flex",
+    background: "transparent",
+    border: "none",
+    color: theme.text,
+    padding: 4,
+    cursor: "pointer",
   },
   restartBtn: {
     alignSelf: "flex-start",

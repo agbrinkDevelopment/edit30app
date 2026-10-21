@@ -129,7 +129,7 @@ export const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 6,
     paddingBottom: 0,
-    paddingTop: 0,
+    paddingTop: 8,
     flexWrap: "wrap",
   },
   // Stretches so the picker + "Utvärdera" fill the row.

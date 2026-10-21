@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Check } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { scrollToSection } from "../shared/helpers";
+import { Check, ChevronRight } from "lucide-react";
 import { theme } from "../theme";
 import SectionCheckCircle from "./SectionCheckCircle";
 import SectionHelp from "./SectionHelp";
@@ -28,6 +29,22 @@ export default function CityMap({ map }: { map: MapLocations }) {
   // get theirs later.
   const hasGame = selected?.role === "victim";
   const gameSolved = !!selected?.done;
+
+  // The map only takes scrolls and drags after a click on it; a click or
+  // touch anywhere outside it covers it again. (Events inside the map's
+  // iframe never reach this document, so any that do are outside it.)
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [mapActive, setMapActive] = useState(false);
+  useEffect(() => {
+    if (!mapActive) return;
+    const lock = (e: PointerEvent) => {
+      if (!mapRef.current?.contains(e.target as Node)) setMapActive(false);
+    };
+    document.addEventListener("pointerdown", lock);
+    return () => document.removeEventListener("pointerdown", lock);
+  }, [mapActive]);
+  useEffect(() => setMapActive(false), [selected?.id]);
+  const nextPin = selected ? pins[pins.indexOf(selected) + 1] : undefined;
 
   return (
     <div>
@@ -145,14 +162,32 @@ export default function CityMap({ map }: { map: MapLocations }) {
               <span style={styles.dividerLabel}>Kartan</span>
             </div>
             {selected.location ? (
-              <iframe
-                key={selected.id}
-                title="Karta över Uppsala"
-                src={osmEmbedUrl(selected.location.lat, selected.location.lon)}
-                className="citymap-iframe"
-                style={styles.iframe}
-                loading="lazy"
-              />
+              <div ref={mapRef} style={styles.mapWrap}>
+                <iframe
+                  key={selected.id}
+                  title="Karta över Uppsala"
+                  src={osmEmbedUrl(
+                    selected.location.lat,
+                    selected.location.lon,
+                  )}
+                  className="citymap-iframe"
+                  style={styles.iframe}
+                  loading="lazy"
+                />
+                {/* Covers the map so scrolling the page over it doesn't
+                    move the map; a click lifts it. */}
+                {!mapActive && (
+                  <button
+                    type="button"
+                    onClick={() => setMapActive(true)}
+                    style={styles.mapCover}
+                  >
+                    <span style={styles.mapCoverLabel}>
+                      Klicka för att interagera
+                    </span>
+                  </button>
+                )}
+              </div>
             ) : (
               <div style={styles.noLocation}>
                 Platsen är inte utsatt på kartan än.
@@ -161,10 +196,15 @@ export default function CityMap({ map }: { map: MapLocations }) {
             {hasGame && (
               <>
                 <div className="citymap-divider" style={styles.divider}>
-                  <span style={styles.dividerLabel}>Minispelet</span>
+                  <span style={styles.dividerLabel}>Utredning</span>
                 </div>
                 <ApartmentGame
-                  onExit={() => setDone(selected, true)}
+                  onExit={() => {
+                    setDone(selected, true);
+                    // Back to the top of Kartan, like its side-nav button —
+                    // once the mobile full-screen layer has closed.
+                    window.setTimeout(() => scrollToSection("kartan"), 50);
+                  }}
                   style={styles.game}
                 />
                 {gameSolved && (
@@ -174,23 +214,39 @@ export default function CityMap({ map }: { map: MapLocations }) {
                 )}
               </>
             )}
-            {/* Marks the location done by hand, also where there's a game. */}
-            <button
-              type="button"
-              onClick={() => setDone(selected, !gameSolved)}
-              style={{
-                ...styles.validateBtn,
-                ...(gameSolved ? styles.validateBtnDone : {}),
-              }}
-            >
-              {gameSolved ? (
-                <>
-                  <Check size={14} strokeWidth={3} /> Klar – ångra
-                </>
-              ) : (
-                "Markera som klar"
+            <div style={styles.footer}>
+              {/* Marks the location done by hand, also where there's a game. */}
+              <button
+                type="button"
+                onClick={() => setDone(selected, !gameSolved)}
+                style={{
+                  ...styles.validateBtn,
+                  ...(gameSolved ? styles.validateBtnDone : {}),
+                }}
+              >
+                {gameSolved ? (
+                  <>
+                    <Check size={14} strokeWidth={3} /> Klar – ångra
+                  </>
+                ) : (
+                  "Markera som klar"
+                )}
+              </button>
+              {/* Once this location is done (or skipped), on to the next pill. */}
+              {nextPin && (gameSolved || selected.skipped) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(nextPin.id);
+                    // To the top of Kartan, like its side-nav button.
+                    scrollToSection("kartan");
+                  }}
+                  style={styles.nextBtn}
+                >
+                  Nästa utredning <ChevronRight size={16} />
+                </button>
               )}
-            </button>
+            </div>
             {/* Visa ledtråd / Hoppa över for this location. */}
             <SectionHelp sectionId={selected.sectionId} done={gameSolved} />
           </div>
@@ -267,10 +323,37 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     overflow: "hidden",
   },
+  mapWrap: { position: "relative" },
+  mapCover: {
+    position: "absolute",
+    inset: 0,
+    padding: 0,
+    border: "none",
+    borderRadius: 10,
+    background: "rgba(255, 253, 248, 0.35)",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  // In the middle of the map.
+  mapCoverLabel: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    transform: "translate(-50%, -50%)",
+    whiteSpace: "nowrap",
+    background: theme.cardBg,
+    color: theme.text,
+    border: `1px solid ${theme.textFaint}`,
+    borderRadius: 20,
+    padding: "5px 12px",
+    fontSize: 13,
+    fontWeight: 600,
+  },
   iframe: {
     width: "100%",
     height: 360,
-    border: "none",
+    border: `1px solid ${theme.textFaint}`,
+    boxSizing: "border-box",
     borderRadius: 10,
     display: "block",
   },
@@ -326,6 +409,28 @@ const styles: Record<string, React.CSSProperties> = {
   solved: {
     fontWeight: 600,
     color: theme.accent,
+  },
+  footer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  nextBtn: {
+    marginLeft: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    background: theme.accent,
+    color: theme.primaryText,
+    border: `1.5px solid ${theme.accent}`,
+    borderRadius: 20,
+    padding: "6px 10px 6px 16px",
+    fontFamily: "inherit",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
   },
   validateBtn: {
     alignSelf: "flex-start",
